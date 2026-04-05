@@ -132,28 +132,22 @@ function Get-FeatherModsPath {
         for ($i = 0; $i -lt $versions.Count; $i++) {
             Write-Host "  [$($i+1)] $($versions[$i])"
         }
-
         $choice = Read-Host "Choose version (number or name)"
         if ($choice -match '^\d+$') {
             $index = [int]$choice - 1
-            if ($index -ge 0 -and $index -lt $versions.Count) {
-                $chosenVersion = $versions[$index]
-            } else {
-                $chosenVersion = $versions[0]
-            }
+            if ($index -ge 0 -and $index -lt $versions.Count) { $chosenVersion = $versions[$index] } else { $chosenVersion = $versions[0] }
         } else {
-            if ($versions -contains $choice) {
-                $chosenVersion = $choice
-            } else {
+            if ($versions -contains $choice) { $chosenVersion = $choice } else {
                 $matches = $versions | Where-Object { $_ -like "$choice*" }
                 $chosenVersion = if ($matches.Count -gt 0) { $matches[0] } else { $versions[0] }
             }
         }
     }
 
-    # Pfad zum Mod-Ordner der gewählten Version
+    # Scanne alle Mods im Version-Ordner, inklusive Unterordner
     $modsPath = Join-Path $featherRoot $chosenVersion
     return $modsPath
+}
 }
 
 # --- Main ---
