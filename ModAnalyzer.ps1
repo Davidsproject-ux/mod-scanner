@@ -1,6 +1,5 @@
 # Made by David
 # Cloudsmp.net Cheat finder
-# Minecraft Mod Scanner (Launcher-only)
 # Passwort: cloudsmp
 
 # ================= Password ==================
