@@ -101,8 +101,7 @@ $texturePacks = Get-TexturePacks -RootPaths $LauncherPaths
 # -------- Texture Packs --------
 Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
 if ($texturePacks.Count -eq 0) {
-    Write-Host "  Keine Texturepacks gefunden." -ForegroundColor DarkGray
-} else {
+    Write-Host "  Keine Texturepacks gefunden." -ForegroundColor DarkGray} else {
     $texturePacks | ForEach-Object {
         Write-Host "  $($_.Name)" -ForegroundColor Magenta
         Write-Host "    $($_.Path)" -ForegroundColor DarkGray
