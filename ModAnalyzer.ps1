@@ -37,10 +37,10 @@ function Is-Illegal {
 
 function Get-Mods {
     param($path)
+
     if (!(Test-Path $path)) { return @() }
 
-    Get-ChildItem $path -Recurse -File |
-    Where-Object { $_.Extension -in $ModExtensions }
+    Get-ChildItem $path -Recurse -Include *.jar,*.litemod,*.mcpack,*.mcaddon,*.modpack -File -ErrorAction SilentlyContinue
 }
 
 function Select-Instance {
