@@ -10,35 +10,49 @@ param(
     [switch]$Quiet
 )
 
-$ModExtensions = @('.jar', '.litemod', '.zip', '.mcpack', '.mcaddon', '.modpack')
+$ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
+$IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
+
+function Is-IllegalMod {
+    param([string]$Name)
+    $lower = $Name.ToLower()
+    foreach ($keyword in $IllegalModNames) {
+        if ($lower -like "*${keyword}*") {
+            return $true
+        }
+    }
+    return $false
+}
 
 function Show-Header {
     Clear-Host
     Write-Host '==============================================' -ForegroundColor DarkGray
     Write-Host 'Made by David' -ForegroundColor Magenta
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
+    Write-Host 'Minecraft Mod Scanner' -ForegroundColor Green
     Write-Host '==============================================' -ForegroundColor DarkGray
 }
 
 function Show-LoadingText {
     Write-Host 'Loading mods...' -ForegroundColor Yellow
     Start-Sleep -Seconds 2
+    Write-Host 'Done loading.' -ForegroundColor Green
+    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
 
 function Get-ModFiles {
     param([string]$RootPath)
-    $mods = @()
-    Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
+    $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         $_.Extension -in $ModExtensions
     } | ForEach-Object {
-        $modTime = $_.LastWriteTime
-        $mods += [PSCustomObject]@{
+        [PSCustomObject]@{
             Path = $_.FullName
-            Modified = $modTime
+            Modified = $_.LastWriteTime
+            Name = $_.Name
         }
     }
-    return $mods
+    return $mods | Sort-Object Modified -Descending
 }
 
 function Get-RecentChanges {
@@ -53,6 +67,35 @@ function Get-RecentChanges {
         }
     }
     return $changes | Sort-Object Modified -Descending
+}
+
+function Get-TexturePacks {
+    param([string]$RootPath)
+    $packs = @()
+    Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
+        ($_.Extension -in @('.zip', '.rar')) -and
+        ($_.Name -match '(?i)(resource|texture|pack)')
+    } | ForEach-Object {
+        $packs += [PSCustomObject]@{
+            Path = $_.FullName
+            Modified = $_.LastWriteTime
+        }
+    }
+    return $packs | Sort-Object Modified -Descending
+}
+
+function Get-RecentlyOpenedFiles {
+    param([string]$RootPath, [DateTime]$Threshold)
+    $opened = @()
+    Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
+        $_.LastAccessTime -ge $Threshold
+    } | ForEach-Object {
+        $opened += [PSCustomObject]@{
+            Path = $_.FullName
+            Accessed = $_.LastAccessTime
+        }
+    }
+    return $opened | Sort-Object Accessed -Descending
 }
 
 function Get-DeletedEntries {
@@ -98,35 +141,48 @@ function Get-ServerLogEntries {
 }
 
 if (-not $Quiet) {
-    Show-AnimatedHeader
-    Write-Host "Minecraft Mod Scanner starting..." -ForegroundColor Cyan
-    Write-Host "Path: $Path"
-    Write-Host "Hours: $Hours"
+    Show-Header
+    Write-Host "Path: $Path" -ForegroundColor White
+    Write-Host "Hours: $Hours" -ForegroundColor White
     Write-Host ""
-    Show-LoadingAnimation
-    Write-Host ""
+    Show-LoadingText
     Write-Host "Scanning path: $Path" -ForegroundColor Green
     Write-Host "=============================================="
     Write-Host ""
 }
 
+$texturePacks = Get-TexturePacks -RootPath $Path
 $mods = Get-ModFiles -RootPath $Path
-Write-Host "Found mod files: $($mods.Count)"
-$mods | Sort-Object Modified -Descending | Select-Object -First 20 | ForEach-Object {
-    Write-Host ("  {0,-19}  {1}" -f $_.Modified.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path)
+$recent = Get-RecentlyOpenedFiles -RootPath $Path -Threshold (Get-Date).AddHours(-2)
+
+Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
+Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+$texturePacks | Select-Object -First 20 | ForEach-Object {
+    Write-Host ("  {0,-19}  {1}" -f $_.Modified.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path) -ForegroundColor Magenta
 }
-if ($mods.Count -gt 20) {
-    Write-Host "  ...and $($mods.Count - 20) more mod files"
+if ($texturePacks.Count -gt 20) {
+    Write-Host "  ...and $($texturePacks.Count - 20) more texturepack files" -ForegroundColor Magenta
 }
 Write-Host ""
 
-$recent = Get-RecentChanges -RootPath $Path -Threshold $TimeThreshold
-Write-Host "Recent changes within $Hours hours: $($recent.Count)"
+Write-Host "MODS" -ForegroundColor Cyan
+Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+$mods | Select-Object -First 50 | ForEach-Object {
+    $color = if (Is-IllegalMod $_.Name) { 'Red' } else { 'Green' }
+    Write-Host ("  {0,-19}  {1}" -f $_.Modified.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path) -ForegroundColor $color
+}
+if ($mods.Count -gt 50) {
+    Write-Host "  ...and $($mods.Count - 50) more mod files" -ForegroundColor Cyan
+}
+Write-Host ""
+
+Write-Host "ZU LETZT GEÖFFNETE DATEIEN (letzte 2 Stunden)" -ForegroundColor Yellow
+Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 $recent | Select-Object -First 20 | ForEach-Object {
-    Write-Host ("  {0,-19}  {1}" -f $_.Modified.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path)
+    Write-Host ("  {0,-19}  {1}" -f $_.Accessed.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path) -ForegroundColor Yellow
 }
 if ($recent.Count -gt 20) {
-    Write-Host "  ...and $($recent.Count - 20) more files"
+    Write-Host "  ...and $($recent.Count - 20) more files" -ForegroundColor Yellow
 }
 Write-Host ""
 
