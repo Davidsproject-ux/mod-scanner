@@ -35,10 +35,33 @@ function Show-Header {
 }
 
 function Show-LoadingText {
-    Write-Host 'Loading mods...' -ForegroundColor Yellow
-    Start-Sleep -Seconds 2
+    $text = 'Loading mods...'
+    foreach ($ch in $text.ToCharArray()) {
+        Write-Host -NoNewline $ch -ForegroundColor Yellow
+        Start-Sleep -Milliseconds 80
+    }
+    Write-Host ''
+    Start-Sleep -Milliseconds 400
     Write-Host 'Done loading.' -ForegroundColor Green
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+}
+
+function Has-CloudSMPJoin {
+    param([string]$RootPath)
+    $logFiles = Get-ChildItem -Path $RootPath -Recurse -File -Include *.log, launcher_log.txt -ErrorAction SilentlyContinue
+    foreach ($file in $logFiles) {
+        try {
+            $content = Get-Content -Path $file.FullName -ErrorAction SilentlyContinue
+            foreach ($line in $content) {
+                if ($line -match '(?i)cloudsmp\.net|cloudsmp') {
+                    return $true
+                }
+            }
+        } catch {
+            continue
+        }
+    }
+    return $false
 }
 
 function Get-ModFiles {
@@ -48,8 +71,8 @@ function Get-ModFiles {
     } | ForEach-Object {
         [PSCustomObject]@{
             Path = $_.FullName
-            Modified = $_.LastWriteTime
             Name = $_.Name
+            Modified = $_.LastWriteTime
         }
     }
     return $mods | Sort-Object Modified -Descending
@@ -92,6 +115,7 @@ function Get-RecentlyOpenedFiles {
     } | ForEach-Object {
         $opened += [PSCustomObject]@{
             Path = $_.FullName
+            Name = $_.Name
             Accessed = $_.LastAccessTime
         }
     }
@@ -145,6 +169,11 @@ if (-not $Quiet) {
     Write-Host "Path: $Path" -ForegroundColor White
     Write-Host "Hours: $Hours" -ForegroundColor White
     Write-Host ""
+    if (-not (Has-CloudSMPJoin -RootPath $Path)) {
+        Write-Host 'CloudSMP connection not detected.' -ForegroundColor Red
+        Write-Host 'Der Scan läuft nur, wenn CloudSMP in den Logs gefunden wird.' -ForegroundColor Red
+        exit 1
+    }
     Show-LoadingText
     Write-Host "Scanning path: $Path" -ForegroundColor Green
     Write-Host "=============================================="
@@ -158,7 +187,8 @@ $recent = Get-RecentlyOpenedFiles -RootPath $Path -Threshold (Get-Date).AddHours
 Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
 Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 $texturePacks | Select-Object -First 20 | ForEach-Object {
-    Write-Host ("  {0,-19}  {1}" -f $_.Modified.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path) -ForegroundColor Magenta
+    Write-Host "  $($_.Name)" -ForegroundColor Magenta
+    Write-Host "    $($_.Path)" -ForegroundColor DarkGray
 }
 if ($texturePacks.Count -gt 20) {
     Write-Host "  ...and $($texturePacks.Count - 20) more texturepack files" -ForegroundColor Magenta
@@ -169,7 +199,8 @@ Write-Host "MODS" -ForegroundColor Cyan
 Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 $mods | Select-Object -First 50 | ForEach-Object {
     $color = if (Is-IllegalMod $_.Name) { 'Red' } else { 'Green' }
-    Write-Host ("  {0,-19}  {1}" -f $_.Modified.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path) -ForegroundColor $color
+    Write-Host "  $($_.Name)" -ForegroundColor $color
+    Write-Host "    $($_.Path)" -ForegroundColor DarkGray
 }
 if ($mods.Count -gt 50) {
     Write-Host "  ...and $($mods.Count - 50) more mod files" -ForegroundColor Cyan
@@ -179,7 +210,8 @@ Write-Host ""
 Write-Host "ZU LETZT GEÖFFNETE DATEIEN (letzte 2 Stunden)" -ForegroundColor Yellow
 Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 $recent | Select-Object -First 20 | ForEach-Object {
-    Write-Host ("  {0,-19}  {1}" -f $_.Accessed.ToString("yyyy-MM-dd HH:mm:ss"), $_.Path) -ForegroundColor Yellow
+    Write-Host "  $($_.Name)" -ForegroundColor Yellow
+    Write-Host "    $($_.Path)" -ForegroundColor DarkGray
 }
 if ($recent.Count -gt 20) {
     Write-Host "  ...and $($recent.Count - 20) more files" -ForegroundColor Yellow
