@@ -89,8 +89,27 @@ function Get-PrismModsPath {
             Write-Host "  [$i] $v"
             $i++
         }
-        $choice = Read-Host "Which version do you want to scan? Enter number"
-        $chosenVersion = $versions[$choice - 1]
+
+        $choice = Read-Host "Which version do you want to scan? Enter number or version string"
+
+        # Prüfen, ob die Eingabe eine Zahl ist
+        if ($choice -as [int]) {
+            $index = [int]$choice - 1
+            if ($index -ge 0 -and $index -lt $versions.Count) {
+                $chosenVersion = $versions[$index]
+            } else {
+                Write-Host "Invalid number. Using first version." -ForegroundColor Yellow
+                $chosenVersion = $versions[0]
+            }
+        } else {
+            # Prüfen, ob die Eingabe als Text existiert
+            if ($versions -contains $choice) {
+                $chosenVersion = $choice
+            } else {
+                Write-Host "Version not found. Using first version." -ForegroundColor Yellow
+                $chosenVersion = $versions[0]
+            }
+        }
     }
 
     $modsPath = Join-Path $prismRoot "$chosenVersion\minecraft\mods"
