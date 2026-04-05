@@ -25,7 +25,7 @@ $SleepModDisplay = 0
 $LauncherPaths = @{
     "Vanilla"        = "$env:APPDATA\.minecraft\mods"
     "Lunar Client"   = "$env:USERPROFILE\.lunarclient\offline\multiver"
-    "Feather Client" = "$env:USERPROFILE\.feather"
+    "Feather Client" = "$env:USERPROFILE\.feather\instances"
     "Prism Client"   = "$env:APPDATA\PrismLauncher\instances"
     "MultiMC"        = "$env:USERPROFILE\MultiMC\instances"
     "Modrinth"       = "$env:APPDATA\ModrinthApp\profiles"
@@ -97,8 +97,6 @@ function Select-Instance {
         }
 
         $choice = Read-Host "Choose number or name"
-        $chosen = $null
-
         if ($choice -match '^\d+$') {
             $index = [int]$choice - 1
             if ($index -ge 0 -and $index -lt $instances.Count) {
@@ -117,6 +115,44 @@ function Select-Instance {
     }
 
     return Join-Path $RootPath "$chosen\$ModsSubPath"
+}
+
+# --- Feather Mods Path ---
+function Get-FeatherModsPath {
+    $featherRoot = "$env:USERPROFILE\.feather\instances"
+    if (-not (Test-Path $featherRoot)) { return $null }
+
+    $versions = Get-ChildItem -Path $featherRoot -Directory | Select-Object -ExpandProperty Name
+    if ($versions.Count -eq 0) { return $null }
+
+    if ($versions.Count -eq 1) {
+        $chosenVersion = $versions[0]
+    } else {
+        Write-Host "Multiple Feather versions found:" -ForegroundColor Cyan
+        for ($i = 0; $i -lt $versions.Count; $i++) {
+            Write-Host "  [$($i+1)] $($versions[$i])"
+        }
+
+        $choice = Read-Host "Choose version (number or name)"
+        if ($choice -match '^\d+$') {
+            $index = [int]$choice - 1
+            if ($index -ge 0 -and $index -lt $versions.Count) {
+                $chosenVersion = $versions[$index]
+            } else {
+                $chosenVersion = $versions[0]
+            }
+        } else {
+            if ($versions -contains $choice) {
+                $chosenVersion = $choice
+            } else {
+                $matches = $versions | Where-Object { $_ -like "$choice*" }
+                $chosenVersion = if ($matches.Count -gt 0) { $matches[0] } else { $versions[0] }
+            }
+        }
+    }
+
+    $modsPath = Join-Path $featherRoot "$chosenVersion\user-mods"
+    return $modsPath
 }
 
 # --- Main ---
@@ -148,7 +184,7 @@ foreach ($launcher in $LauncherPaths.Keys) {
             $path = Select-Instance $root "CurseForge" "mods"
         }
         "Feather Client" {
-            $path = Select-Instance $root "Feather" "user-mods"
+            $path = Get-FeatherModsPath
         }
     }
 
