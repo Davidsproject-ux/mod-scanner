@@ -14,6 +14,9 @@ $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix','7tblpqnv1')
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
 
+$IgnoredExtensions = @('.png', '.lnk', '.md', '.json', '.log')
+$IgnoredPathPattern = '(?i)\\Downloads\\'
+
 function Is-IllegalMod {
     param([string]$Name)
     $lower = $Name.ToLower()
@@ -21,6 +24,17 @@ function Is-IllegalMod {
         if ($lower -like "*${keyword}*") {
             return $true
         }
+    }
+    return $false
+}
+
+function Is-IgnoredFile {
+    param([System.IO.FileInfo]$File)
+    if ($IgnoredExtensions -contains $File.Extension.ToLower()) {
+        return $true
+    }
+    if ($File.FullName -match $IgnoredPathPattern) {
+        return $true
     }
     return $false
 }
@@ -50,8 +64,7 @@ function Get-ModFiles {
     param([string]$RootPath)
     $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         ($_.Extension -in $ModExtensions) -and
-        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
-        ($_.Extension -ne '.log')
+        (-not (Is-IgnoredFile $_))
     } | ForEach-Object {
         [PSCustomObject]@{
             Path = $_.FullName
@@ -67,8 +80,7 @@ function Get-RecentChanges {
     $changes = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         $_.LastWriteTime -ge $Threshold -and
-        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
-        ($_.Extension -ne '.log')
+        (-not (Is-IgnoredFile $_))
     } | ForEach-Object {
         $changes += [PSCustomObject]@{
             Path = $_.FullName
@@ -84,8 +96,7 @@ function Get-TexturePacks {
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         ($_.Extension -in @('.zip', '.rar')) -and
         ($_.Name -match '(?i)(resource|texture|pack)') -and
-        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
-        ($_.Extension -ne '.log')
+        (-not (Is-IgnoredFile $_))
     } | ForEach-Object {
         $packs += [PSCustomObject]@{
             Path = $_.FullName
@@ -100,8 +111,7 @@ function Get-RecentlyOpenedFiles {
     $opened = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         $_.LastAccessTime -ge $Threshold -and
-        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
-        ($_.Extension -ne '.log')
+        (-not (Is-IgnoredFile $_))
     } | ForEach-Object {
         $opened += [PSCustomObject]@{
             Path = $_.FullName
@@ -171,7 +181,7 @@ function Get-UsbDrives {
         if (-not $letter) { continue }
         $files = @()
         try {
-            $files = Get-ChildItem -Path "$letter\*" -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 20
+            $files = Get-ChildItem -Path "$letter\*" -Recurse -File -ErrorAction SilentlyContinue | Where-Object { -not (Is-IgnoredFile $_) } | Select-Object -First 20
         } catch {
             $files = @()
         }
