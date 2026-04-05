@@ -46,29 +46,6 @@ function Show-LoadingText {
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
 
-function Get-ServerJoinInfo {
-    param([string]$LogPath)
-    if (-not (Test-Path $LogPath)) {
-        return $null
-    }
-    $joined = $false
-    $joinLines = @()
-    try {
-        Get-Content -Path $LogPath -ErrorAction SilentlyContinue | ForEach-Object {
-            if ($_ -match '(?i)cloudsmp\.net|cloudsmp') {
-                $joined = $true
-                $joinLines += $_
-            }
-        }
-    } catch {
-        return $null
-    }
-    return [PSCustomObject]@{
-        Joined = $joined
-        Lines = $joinLines
-    }
-}
-
 function Get-ModFiles {
     param([string]$RootPath)
     $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
@@ -174,19 +151,6 @@ if (-not $Quiet) {
     Write-Host "Path: $Path" -ForegroundColor White
     Write-Host "Hours: $Hours" -ForegroundColor White
     Write-Host ""
-    if ($ServerLog) {
-        $joinInfo = Get-ServerJoinInfo -LogPath $ServerLog
-        if ($joinInfo -ne $null) {
-            if ($joinInfo.Joined) {
-                Write-Host 'CloudSMP connection detected in server log.' -ForegroundColor Green
-            } else {
-                Write-Host 'CloudSMP connection not detected in server log.' -ForegroundColor Yellow
-            }
-        } else {
-            Write-Host 'Server log konnte nicht gelesen werden.' -ForegroundColor Red
-        }
-        Write-Host ""
-    }
     Show-LoadingText
     Write-Host "Scanning path: $Path" -ForegroundColor Green
     Write-Host "=============================================="
