@@ -23,30 +23,6 @@ param(
     [switch]$Quiet
 )
 
-if (-not $Hours) { $Hours = 3 }
-if (-not $Delay) { $Delay = 1 }
-
-# ================= Launcher Paths =================
-# Prism Launcher Versionserkennung
-$PrismBase = "$env:APPDATA\Roaming\PrismLauncher\instances"
-$PrismVersions = Get-ChildItem -Path $PrismBase -Directory | Select-Object -ExpandProperty Name
-if ($PrismVersions.Count -eq 0) {
-    Write-Host "Keine Prism Launcher Versionen gefunden." -ForegroundColor Red
-    $PrismModPath = $null
-} elseif ($PrismVersions.Count -eq 1) {
-    $PrismVersion = $PrismVersions[0]
-    $PrismModPath = Join-Path $PrismBase "$PrismVersion\minecraft\mods"
-} else {
-    if ($PrismVersions -contains '1.21') {
-        $PrismVersion = '1.21'
-    } else {
-        Write-Host "Mehrere Prism-Versionen gefunden:"
-        $PrismVersions | ForEach-Object { Write-Host "  $_" }
-        $PrismVersion = Read-Host "Welche Version möchtest du scannen?"
-    }
-    $PrismModPath = Join-Path $PrismBase "$PrismVersion\minecraft\mods"
-}
-
 # Launcher Mod-Ordner
 $LauncherPaths = @(
     "$env:APPDATA\.minecraft\mods",
@@ -56,7 +32,6 @@ $LauncherPaths = @(
     "$env:USERPROFILE\.lunarclient\profiles",
     "$env:USERPROFILE\MultiMC\instances"
 )
-if ($PrismModPath) { $LauncherPaths += $PrismModPath }
 
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @(
@@ -150,25 +125,25 @@ $mods         = Get-ModFiles -RootPaths $LauncherPaths
 $texturePacks = Get-TexturePacks -RootPaths $LauncherPaths
 
 # -------- Texture Packs --------
-Write-Host "`nTEXTUREPACKS" -ForegroundColor Magenta
+Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
 $texturePacks | Select-Object -First 20 | ForEach-Object {
     Write-Host "  $($_.Name)" -ForegroundColor Magenta
-    Start-Sleep -Seconds $Delay
+    Start-Sleep -Seconds 1.5
     Write-Host "    $($_.Path)" -ForegroundColor DarkGray
-    Start-Sleep -Seconds $Delay
+    Start-Sleep -Seconds 1.5
 }
 if ($texturePacks.Count -gt 20) {
     Write-Host "  ...and $($texturePacks.Count - 20) more texturepack files" -ForegroundColor Magenta
 }
 
 # -------- Mods --------
-Write-Host "`nMODS" -ForegroundColor Cyan
+Write-Host "MODS" -ForegroundColor Cyan
 $mods | Select-Object -First 50 | ForEach-Object {
     $color = if (Is-IllegalMod $_.Name) { 'Red' } else { 'Green' }
     Write-Host "  $($_.Name)" -ForegroundColor $color
-    Start-Sleep -Seconds $Delay
+    Start-Sleep -Seconds 1.5
     Write-Host "    $($_.Path)" -ForegroundColor DarkGray
-    Start-Sleep -Seconds $Delay
+    Start-Sleep -Seconds 1.5
 }
 if ($mods.Count -gt 50) {
     Write-Host "  ...and $($mods.Count - 50) more mod files" -ForegroundColor Cyan
@@ -177,10 +152,10 @@ if ($mods.Count -gt 50) {
 # -------- Deleted Entries --------
 if ($DeletedLog) {
     $deletions = Get-DeletedEntries -LogPath $DeletedLog -Threshold $TimeThreshold
-    Write-Host "`nDeletion entries in the last $Hours hours: $($deletions.Count)"
+    Write-Host "Deletion entries in the last $Hours hours: $($deletions.Count)"
     $deletions | Select-Object -First 20 | ForEach-Object {
         Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
-        Start-Sleep -Seconds $Delay
+        Start-Sleep -Seconds 1.5
     }
     if ($deletions.Count -gt 20) {
         Write-Host "  ...and $($deletions.Count - 20) more entries"
@@ -191,14 +166,14 @@ if ($DeletedLog) {
 if ($ServerLog) {
     $entries = Get-ServerLogEntries -LogPath $ServerLog -PlayerName $Player -Threshold $TimeThreshold
     $filterText = if ($Player) { " for player `"$Player`"" } else { "" }
-    Write-Host "`nServer log entries$filterText in the last $Hours hours: $($entries.Count)"
+    Write-Host "Server log entries$filterText in the last $Hours hours: $($entries.Count)"
     $entries | Select-Object -First 20 | ForEach-Object {
         Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
-        Start-Sleep -Seconds $Delay
+        Start-Sleep -Seconds 1.5
     }
     if ($entries.Count -gt 20) {
         Write-Host "  ...and $($entries.Count - 20) more lines"
     }
 }
 
-if (-not $Quiet) { Write-Host "`nDone." }
+if (-not $Quiet) { Write-Host "Done." }
