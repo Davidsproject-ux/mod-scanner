@@ -1,5 +1,6 @@
 # Made by David
 # Cloudsmp.net Cheat finder
+# Minecraft Mod Scanner
 
 param(
     [string]$Path = $(Get-Location).Path,
@@ -29,10 +30,11 @@ function Is-IllegalMod {
 
 function Show-Header {
     Clear-Host
-    Write-Host '==============================================' -ForegroundColor Red
-    Write-Host 'Made by David' -ForegroundColor green
+    Write-Host '==============================================' -ForegroundColor DarkGray
+    Write-Host 'Made by David' -ForegroundColor Magenta
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
-    Write-Host '==============================================' -ForegroundColor Red
+    Write-Host 'Minecraft Mod Scanner' -ForegroundColor Green
+    Write-Host '==============================================' -ForegroundColor DarkGray
 }
 
 function Show-LoadingText {
@@ -44,7 +46,7 @@ function Show-LoadingText {
     Write-Host ''
     Start-Sleep -Milliseconds 400
     Write-Host 'Done loading.' -ForegroundColor Green
-    Write-Host '----------------------------------------------' -ForegroundColor DarkRed
+    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
 
 function Get-ModFiles {
@@ -133,6 +135,9 @@ $texturePacks | Select-Object -First 20 | ForEach-Object {
     Write-Host "  $($_.Name)" -ForegroundColor Magenta
     Write-Host "    $($_.Path)" -ForegroundColor DarkGray
 }
+if ($texturePacks.Count -gt 20) {
+    Write-Host "  ...and $($texturePacks.Count - 20) more texturepack files" -ForegroundColor Magenta
+}
 
 # -------- Mods --------
 Write-Host "MODS" -ForegroundColor Cyan
@@ -140,6 +145,9 @@ $mods | Select-Object -First 50 | ForEach-Object {
     $color = if (Is-IllegalMod $_.Name) { 'Red' } else { 'Green' }
     Write-Host "  $($_.Name)" -ForegroundColor $color
     Write-Host "    $($_.Path)" -ForegroundColor DarkGray
+}
+if ($mods.Count -gt 50) {
+    Write-Host "  ...and $($mods.Count - 50) more mod files" -ForegroundColor Cyan
 }
 
 # -------- Deleted Entries --------
