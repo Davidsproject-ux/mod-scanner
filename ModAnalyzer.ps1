@@ -90,14 +90,14 @@ function Show-ModsAnimated {
         $mods = $LauncherMods[$launcher]
         if ($mods.Count -eq 0) {
             Write-Host "  Keine Mods gefunden." -ForegroundColor DarkGray
-            Start-Sleep -Seconds 2
+            Start-Sleep -Seconds 1
         } else {
             foreach ($mod in $mods) {
                 $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
                 Write-Host "  $($mod.Name)" -ForegroundColor $color
-                Start-Sleep -Seconds 2
+                Start-Sleep -Seconds 1
                 Write-Host "    $($mod.Path)" -ForegroundColor DarkGray
-                Start-Sleep -Seconds 2
+                Start-Sleep -Seconds 1
             }
         }
     }
