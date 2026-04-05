@@ -13,6 +13,36 @@ param(
 $ModExtensions = @('.jar', '.litemod', '.zip', '.mcpack', '.mcaddon', '.modpack')
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
 
+function Show-AnimatedHeader {
+    $title = @(
+        @{Text='Made by David'; Color='Magenta'},
+        @{Text='Cloudsmp.net Cheat finder'; Color='Cyan'}
+    )
+    $frames = @('✨', '🌈', '💥', '🔥')
+    for ($i = 0; $i -lt 4; $i++) {
+        Clear-Host
+        Write-Host '==============================================' -ForegroundColor DarkGray
+        foreach ($item in $title) {
+            Write-Host ($frames[$i] + ' ' + $item.Text) -ForegroundColor $item.Color
+        }
+        Write-Host '==============================================' -ForegroundColor DarkGray
+        Start-Sleep -Milliseconds 250
+    }
+}
+
+function Show-LoadingAnimation {
+    $spinner = @('🌈', '✨', '💫', '🎇', '🌟', '✨')
+    $message = 'Loading mods...'
+    for ($i = 0; $i -lt 12; $i++) {
+        $frame = $spinner[$i % $spinner.Count]
+        Write-Host -NoNewline ('{0} {1} ' -f $frame, $message) -ForegroundColor Yellow
+        Start-Sleep -Milliseconds 400
+        Write-Host -NoNewline ('`r' + (' ' * ($message.Length + 2)))
+        Write-Host -NoNewline ('`r')
+    }
+    Write-Host ('🌈 {0}' -f $message) -ForegroundColor Yellow
+}
+
 function Get-ModFiles {
     param([string]$RootPath)
     $mods = @()
@@ -85,13 +115,13 @@ function Get-ServerLogEntries {
 }
 
 if (-not $Quiet) {
-    Write-Host "=============================================="
+    Show-AnimatedHeader
     Write-Host "Minecraft Mod Scanner starting..." -ForegroundColor Cyan
     Write-Host "Path: $Path"
     Write-Host "Hours: $Hours"
     Write-Host ""
-    Write-Host "Loading mods..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 5
+    Show-LoadingAnimation
+    Write-Host ""
     Write-Host "Scanning path: $Path" -ForegroundColor Green
     Write-Host "=============================================="
     Write-Host ""
