@@ -11,26 +11,30 @@ if ($PasswordInput -ne "cloudsmp") {
     exit
 }
 
-# Config 
+# Config
 $Hours = 3
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
-
-# Launcher Mod
-$LauncherPaths = @{
-    "Lunar Client"  = "$env:USERPROFILE\.lunarclient\offline\multiver"
-    "Feather Client"= "$env:USERPROFILE\.feather\instances"
-    "Prism Client"  = "$env:APPDATA\PrismLauncher\instances"
-    "MultiMC"       = "$env:USERPROFILE\MultiMC\instances"
-}
 
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
 
 # --- Scan Geschwindigkeit (in Millisekunden) ---
-$SleepLoading = 5      # Ladeanimation pro Buchstabe
-$SleepModDisplay = 0   # Pause beim Anzeigen jedes Mods
+$SleepLoading = 5
+$SleepModDisplay = 0
 
-# Functions
+# Launcher Paths
+$LauncherPaths = @{
+    "Vanilla"        = "$env:APPDATA\.minecraft\mods"
+    "Lunar Client"   = "$env:USERPROFILE\.lunarclient\offline\multiver"
+    "Feather Client" = "$env:USERPROFILE\.feather\instances"
+    "Prism Client"   = "$env:APPDATA\PrismLauncher\instances"
+    "MultiMC"        = "$env:USERPROFILE\MultiMC\instances"
+    "Modrinth"       = "$env:APPDATA\ModrinthApp\profiles"
+    "CurseForge"     = "$env:USERPROFILE\curseforge\minecraft\Instances"
+}
+
+# --- Functions ---
+
 function Is-IllegalMod {
     param([string]$Name)
     $lower = $Name.ToLower()
@@ -73,55 +77,47 @@ function Get-ModFiles {
     return $mods | Sort-Object Modified -Descending
 }
 
-function Get-PrismModsPath {
-    $prismRoot = $LauncherPaths["Prism Client"]
-    if (-not (Test-Path $prismRoot)) { return $null }
+function Select-Instance {
+    param(
+        [string]$RootPath,
+        [string]$LauncherName,
+        [string]$ModsSubPath
+    )
 
-    $versions = Get-ChildItem -Path $prismRoot -Directory | Select-Object -ExpandProperty Name
-    if ($versions.Count -eq 0) { return $null }
+    if (-not (Test-Path $RootPath)) { return $null }
 
-    if ($versions.Count -eq 1) {
-        $chosenVersion = $versions[0]
+    $instances = Get-ChildItem -Path $RootPath -Directory | Select-Object -ExpandProperty Name
+    if ($instances.Count -eq 0) { return $null }
+
+    if ($instances.Count -eq 1) {
+        $chosen = $instances[0]
     } else {
-        Write-Host "Multiple Prism versions found:" -ForegroundColor Cyan
-        for ($i = 0; $i -lt $versions.Count; $i++) {
-            Write-Host "  [$($i+1)] $($versions[$i])"
+        Write-Host "Multiple $LauncherName instances found:" -ForegroundColor Cyan
+        for ($i = 0; $i -lt $instances.Count; $i++) {
+            Write-Host "  [$($i+1)] $($instances[$i])"
         }
 
-        $choice = Read-Host "Which version do you want to scan? Enter number or version string"
-        $chosenVersion = $null
+        $choice = Read-Host "Choose instance (number or name)"
+        $chosen = $null
 
-        # Prüfen, ob die Eingabe eine Zahl ist
         if ($choice -match '^\d+$') {
             $index = [int]$choice - 1
-            if ($index -ge 0 -and $index -lt $versions.Count) {
-                $chosenVersion = $versions[$index]
+            if ($index -ge 0 -and $index -lt $instances.Count) {
+                $chosen = $instances[$index]
             } else {
-                Write-Host "Invalid number. Using first version." -ForegroundColor Yellow
-                $chosenVersion = $versions[0]
+                $chosen = $instances[0]
             }
         } else {
-            # Prüfen auf exakte Übereinstimmung
-            if ($versions -contains $choice) {
-                $chosenVersion = $choice
+            if ($instances -contains $choice) {
+                $chosen = $choice
             } else {
-                # Teilstring-Match (z. B. "1.21" -> "1.21.11")
-                $matches = $versions | Where-Object { $_ -like "$choice*" }
-                if ($matches.Count -eq 1) {
-                    $chosenVersion = $matches[0]
-                } elseif ($matches.Count -gt 1) {
-                    Write-Host "Multiple versions match your input. Using first match:" -ForegroundColor Yellow
-                    $chosenVersion = $matches[0]
-                } else {
-                    Write-Host "Version not found. Using first version." -ForegroundColor Yellow
-                    $chosenVersion = $versions[0]
-                }
+                $matches = $instances | Where-Object { $_ -like "$choice*" }
+                $chosen = if ($matches.Count -gt 0) { $matches[0] } else { $instances[0] }
             }
         }
     }
 
-    $modsPath = Join-Path $prismRoot "$chosenVersion\minecraft\mods"
-    return $modsPath
+    return Join-Path $RootPath "$chosen\$ModsSubPath"
 }
 
 # --- Main ---
@@ -130,29 +126,61 @@ Show-LoadingText
 
 foreach ($launcher in $LauncherPaths.Keys) {
 
-    $path = $LauncherPaths[$launcher]
+    $root = $LauncherPaths[$launcher]
+    $path = $null
 
-    # Prism Launcher Besonderheit
-    if ($launcher -eq "Prism Client") {
-        $path = Get-PrismModsPath
-        if (-not $path) {
-            Write-Host "`nNo Prism mods found." -ForegroundColor Yellow
-            continue
+    switch ($launcher) {
+
+        "Vanilla" {
+            $path = $root
         }
+
+        "Lunar Client" {
+            $path = $root
+        }
+
+        "Prism Client" {
+            $path = Select-Instance $root "Prism" "minecraft\mods"
+        }
+
+        "MultiMC" {
+            $path = Select-Instance $root "MultiMC" "minecraft\mods"
+        }
+
+        "Modrinth" {
+            $path = Select-Instance $root "Modrinth" "mods"
+        }
+
+        "CurseForge" {
+            $path = Select-Instance $root "CurseForge" "mods"
+        }
+
+        "Feather Client" {
+            $path = Select-Instance $root "Feather" ".minecraft\mods"
+        }
+    }
+
+    if (-not $path -or -not (Test-Path $path)) {
+        Write-Host "`nNo mods found for $launcher." -ForegroundColor Yellow
+        continue
     }
 
     Write-Host "`n$launcher Mods:" -ForegroundColor Cyan
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 
     $mods = Get-ModFiles -RootPath $path
+
     if ($mods.Count -eq 0) {
         Write-Host "  No mods found." -ForegroundColor Yellow
     } else {
         foreach ($mod in $mods) {
+            # Optional: nur neue Mods scannen
+            # if ($mod.Modified -lt $TimeThreshold) { continue }
+
             $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
             Write-Host "  $($mod.Name)" -ForegroundColor $color
-            Start-Sleep -Milliseconds $SleepModDisplay
             Write-Host "    $($mod.Path)" -ForegroundColor DarkGray
+            Start-Sleep -Milliseconds $SleepModDisplay
         }
         Write-Host "  ...$($mods.Count) mods total" -ForegroundColor Cyan
     }
