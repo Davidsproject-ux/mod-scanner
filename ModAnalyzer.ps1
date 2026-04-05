@@ -26,6 +26,10 @@ $LauncherPaths = @{
     "CurseForge"     = "$env:USERPROFILE\curseforge\minecraft\Instances"
 }
 
+# Scan Geschwindigkeit
+$SleepLoading = 5
+$SleepModDisplay = 0
+
 # --- Functions ---
 function Is-IllegalMod {
     param([string]$Name)
@@ -45,70 +49,89 @@ function Get-ModFiles {
         Sort-Object LastWriteTime -Descending
 }
 
-# --- Universal Selector ---
+# --- Universal Instance / Version Selector ---
 function Select-Instance {
-    param($RootPath, $Name, $SubPath)
+    param($RootPath, $LauncherName, $ModsSubPath)
 
     if (-not (Test-Path $RootPath)) { return $null }
 
-    $list = Get-ChildItem $RootPath -Directory | Select-Object -Expand Name
-    if ($list.Count -eq 0) { return $null }
+    $instances = Get-ChildItem -Path $RootPath -Directory | Select-Object -ExpandProperty Name
+    if ($instances.Count -eq 0) { return $null }
 
-    if ($list.Count -eq 1) {
-        $chosen = $list[0]
+    if ($instances.Count -eq 1) {
+        $chosen = $instances[0]
     } else {
-        Write-Host "`n$Name versions:" -ForegroundColor Cyan
-        for ($i=0;$i -lt $list.Count;$i++) {
-            Write-Host "[$($i+1)] $($list[$i])"
+        Write-Host "`nMultiple $LauncherName versions/profiles found:" -ForegroundColor Cyan
+        for ($i=0;$i -lt $instances.Count;$i++) {
+            Write-Host "[$($i+1)] $($instances[$i])"
         }
 
-        $input = Read-Host "Select"
-        if ($input -match '^\d+$') {
-            $idx = [int]$input - 1
-            $chosen = $list[$idx]
+        $choice = Read-Host "Select number or name"
+        if ($choice -match '^\d+$') {
+            $index = [int]$choice - 1
+            $chosen = if ($index -ge 0 -and $index -lt $instances.Count) { $instances[$index] } else { $instances[0] }
         } else {
-            $chosen = $list | Where-Object { $_ -like "$input*" } | Select-Object -First 1
+            $chosen = $instances | Where-Object { $_ -like "$choice*" } | Select-Object -First 1
+            if (-not $chosen) { $chosen = $instances[0] }
         }
-
-        if (-not $chosen) { $chosen = $list[0] }
     }
 
-    return Join-Path $RootPath "$chosen\$SubPath"
+    return Join-Path $RootPath "$chosen\$ModsSubPath"
 }
 
-# --- Feather FIX ---
+# --- Feather Mods Path ---
 function Get-FeatherModsPath {
-
     $root = "$env:USERPROFILE\.feather\user-mods"
     if (-not (Test-Path $root)) { return $null }
 
-    $versions = Get-ChildItem $root -Directory | Select-Object -Expand Name
+    $versions = Get-ChildItem $root -Directory | Select-Object -ExpandProperty Name
     if ($versions.Count -eq 0) { return $null }
 
     if ($versions.Count -eq 1) {
-        $chosen = $versions[0]
+        $chosenVersion = $versions[0]
     } else {
-        Write-Host "`nFeather Versions:" -ForegroundColor Cyan
+        Write-Host "`nFeather versions found:" -ForegroundColor Cyan
         for ($i=0;$i -lt $versions.Count;$i++) {
             Write-Host "[$($i+1)] $($versions[$i])"
         }
 
-        $input = Read-Host "Select version"
+        $input = Read-Host "Select version (number or name)"
         if ($input -match '^\d+$') {
-            $chosen = $versions[[int]$input - 1]
+            $index = [int]$input - 1
+            $chosenVersion = if ($index -ge 0 -and $index -lt $versions.Count) { $versions[$index] } else { $versions[0] }
         } else {
-            $chosen = $versions | Where-Object { $_ -like "$input*" } | Select-Object -First 1
+            $chosenVersion = $versions | Where-Object { $_ -like "$input*" } | Select-Object -First 1
+            if (-not $chosenVersion) { $chosenVersion = $versions[0] }
         }
-
-        if (-not $chosen) { $chosen = $versions[0] }
     }
 
-    return Join-Path $root $chosen
+    return Join-Path $root $chosenVersion
+}
+
+# --- Header / Loading ---
+function Show-Header {
+    Clear-Host
+    Write-Host '==============================================' -ForegroundColor DarkRed
+    Write-Host 'Made by David' -ForegroundColor Red
+    Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Red
+    Write-Host 'Bist du ein Cheater?😒' -ForegroundColor Blue
+    Write-Host '==============================================' -ForegroundColor DarkRed
+}
+
+function Show-LoadingText {
+    $text = 'Scanning launchers...'
+    foreach ($ch in $text.ToCharArray()) {
+        Write-Host -NoNewline $ch -ForegroundColor Yellow
+        Start-Sleep -Milliseconds $SleepLoading
+    }
+    Write-Host ''
+    Write-Host 'Done scanning.' -ForegroundColor DarkRed
+    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
 
 # --- Main ---
-Clear-Host
-Write-Host "Scanning..." -ForegroundColor Yellow
+Show-Header
+Show-LoadingText
 
 foreach ($launcher in $LauncherPaths.Keys) {
 
@@ -116,16 +139,16 @@ foreach ($launcher in $LauncherPaths.Keys) {
     $path = $null
 
     switch ($launcher) {
-        "Vanilla" { $path = $root }
-        "Lunar Client" { $path = $root }
-        "Prism Client" { $path = Select-Instance $root "Prism" "minecraft\mods" }
-        "MultiMC" { $path = Select-Instance $root "MultiMC" "minecraft\mods" }
-        "Modrinth" { $path = Select-Instance $root "Modrinth" "mods" }
-        "CurseForge" { $path = Select-Instance $root "CurseForge" "mods" }
+        "Vanilla"        { $path = $root }
+        "Lunar Client"   { $path = $root }
+        "Prism Client"   { $path = Select-Instance $root "Prism" "minecraft\mods" }
+        "MultiMC"        { $path = Select-Instance $root "MultiMC" "minecraft\mods" }
+        "Modrinth"       { $path = Select-Instance $root "Modrinth" "mods" }
+        "CurseForge"     { $path = Select-Instance $root "CurseForge" "mods" }
         "Feather Client" { $path = Get-FeatherModsPath }
     }
 
-    Write-Host "`n$launcher:" -ForegroundColor Cyan
+    Write-Host "`n$launcher Mods:" -ForegroundColor Cyan
 
     if (-not $path -or -not (Test-Path $path)) {
         Write-Host "No mods found" -ForegroundColor Yellow
@@ -141,10 +164,12 @@ foreach ($launcher in $LauncherPaths.Keys) {
 
     foreach ($mod in $mods) {
         $color = if (Is-IllegalMod $mod.Name) { "Red" } else { "Green" }
-        Write-Host $mod.Name -ForegroundColor $color
+        Write-Host "  $($mod.Name)" -ForegroundColor $color
+        Write-Host "    $($mod.FullName)" -ForegroundColor DarkGray
+        Start-Sleep -Milliseconds $SleepModDisplay
     }
 
-    Write-Host "$($mods.Count) mods found" -ForegroundColor DarkGray
+    Write-Host "  ...$($mods.Count) mods total" -ForegroundColor Cyan
 }
 
 Write-Host "`nScan complete." -ForegroundColor Green
