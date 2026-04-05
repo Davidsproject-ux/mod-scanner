@@ -38,11 +38,11 @@ function Is-IllegalMod {
 
 function Show-Header {
     Clear-Host
-    Write-Host '==============================================' -ForegroundColor DarkGray
-    Write-Host 'Made by David' -ForegroundColor Magenta
-    Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
-    Write-Host 'Minecraft Launcher Mod Scanner' -ForegroundColor Green
-    Write-Host '==============================================' -ForegroundColor DarkGray
+    Write-Host '==============================================' -ForegroundColor DarRed
+    Write-Host 'Made by David' -ForegroundColor Red
+    Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Red
+    Write-Host 'Bist du ein Cheater?😒' -ForegroundColor Red
+    Write-Host '==============================================' -ForegroundColor DarkRed
 }
 
 function Show-LoadingText {
