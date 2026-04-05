@@ -164,22 +164,7 @@ function Get-ServerLogEntries {
     return $entries | Sort-Object Timestamp -Descending
 }
 
-    foreach ($vol in $volumes) {
-        $letter = if ($vol.DriveLetter) { $vol.DriveLetter } else { $vol.DeviceID }
-        $label = $vol.FileSystemLabel -or $vol.Label -or $vol.VolumeName
-        if (-not $letter) { continue }
-        $files = @()
-        try {
-            $files = Get-ChildItem -Path "$letter\*" -Recurse -File -ErrorAction SilentlyContinue | Where-Object { -not (Is-IgnoredFile $_) } | Select-Object -First 20
-        } catch {
-            $files = @()
-        }
-        $usbDrives += [PSCustomObject]@{
-            Drive = $letter
-            Label = $label
-            FileCount = $files.Count
-            Files = $files
-        }
+
     }
     return $usbDrives
 }
