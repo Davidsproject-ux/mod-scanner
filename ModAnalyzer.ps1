@@ -50,7 +50,8 @@ function Get-ModFiles {
     param([string]$RootPath)
     $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         ($_.Extension -in $ModExtensions) -and
-        ($_.FullName -notmatch '(?i)\\Downloads\\')
+        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
+        ($_.Extension -ne '.log')
     } | ForEach-Object {
         [PSCustomObject]@{
             Path = $_.FullName
@@ -65,7 +66,9 @@ function Get-RecentChanges {
     param([string]$RootPath, [DateTime]$Threshold)
     $changes = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
-        $_.LastWriteTime -ge $Threshold
+        $_.LastWriteTime -ge $Threshold -and
+        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
+        ($_.Extension -ne '.log')
     } | ForEach-Object {
         $changes += [PSCustomObject]@{
             Path = $_.FullName
@@ -80,7 +83,9 @@ function Get-TexturePacks {
     $packs = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         ($_.Extension -in @('.zip', '.rar')) -and
-        ($_.Name -match '(?i)(resource|texture|pack)')
+        ($_.Name -match '(?i)(resource|texture|pack)') -and
+        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
+        ($_.Extension -ne '.log')
     } | ForEach-Object {
         $packs += [PSCustomObject]@{
             Path = $_.FullName
@@ -94,7 +99,9 @@ function Get-RecentlyOpenedFiles {
     param([string]$RootPath, [DateTime]$Threshold)
     $opened = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
-        $_.LastAccessTime -ge $Threshold
+        $_.LastAccessTime -ge $Threshold -and
+        ($_.FullName -notmatch '(?i)\\Downloads\\') -and
+        ($_.Extension -ne '.log')
     } | ForEach-Object {
         $opened += [PSCustomObject]@{
             Path = $_.FullName
@@ -147,6 +154,37 @@ function Get-ServerLogEntries {
     return $entries | Sort-Object Timestamp -Descending
 }
 
+function Get-UsbDrives {
+    $usbDrives = @()
+    $volumes = @()
+    if (Get-Command Get-Volume -ErrorAction SilentlyContinue) {
+        $volumes = Get-Volume -DriveType Removable -ErrorAction SilentlyContinue
+    } else {
+        $volumes = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=2" -ErrorAction SilentlyContinue | ForEach-Object {
+            [PSCustomObject]@{DriveLetter = $_.DeviceID; FileSystemLabel = $_.VolumeName}
+        }
+    }
+
+    foreach ($vol in $volumes) {
+        $letter = if ($vol.DriveLetter) { $vol.DriveLetter } else { $vol.DeviceID }
+        $label = $vol.FileSystemLabel -or $vol.Label -or $vol.VolumeName
+        if (-not $letter) { continue }
+        $files = @()
+        try {
+            $files = Get-ChildItem -Path "$letter\*" -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 20
+        } catch {
+            $files = @()
+        }
+        $usbDrives += [PSCustomObject]@{
+            Drive = $letter
+            Label = $label
+            FileCount = $files.Count
+            Files = $files
+        }
+    }
+    return $usbDrives
+}
+
 if (-not $Quiet) {
     Show-Header
     Write-Host "Path: $Path" -ForegroundColor White
@@ -195,6 +233,21 @@ if ($recent.Count -gt 20) {
     Write-Host "  ...and $($recent.Count - 20) more files" -ForegroundColor Yellow
 }
 Write-Host ""
+
+$usbDrives = Get-UsbDrives
+if ($usbDrives.Count -gt 0) {
+    Write-Host "USB-DRIVES" -ForegroundColor White
+    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+    foreach ($drive in $usbDrives) {
+        Write-Host "Drive: $($drive.Drive) ($($drive.Label))" -ForegroundColor Cyan
+        Write-Host "Files found: $($drive.FileCount)" -ForegroundColor Cyan
+        foreach ($file in $drive.Files) {
+            Write-Host "  $($file.Name)" -ForegroundColor White
+            Write-Host "    $($file.FullName)" -ForegroundColor DarkGray
+        }
+        Write-Host ""
+    }
+}
 
 if ($DeletedLog) {
     $deletions = Get-DeletedEntries -LogPath $DeletedLog -Threshold $TimeThreshold
