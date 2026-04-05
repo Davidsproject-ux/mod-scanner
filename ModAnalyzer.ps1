@@ -10,16 +10,6 @@ param(
     [switch]$Quiet
 )
 
-$pw = Read-Host "cloudsmp.net" -AsSecureString
-$plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($pw)
-)
-
-if ($plain -ne "cloudsmp.net") {
-    Write-Host "Wrong password!" -ForegroundColor Red
-    exit
-}
-
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix','7tblpqnv1')
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
@@ -51,10 +41,11 @@ function Is-IgnoredFile {
 
 function Show-Header {
     Clear-Host
-    Write-Host '==============================================' -ForegroundColor DarkRed
-    Write-Host 'Made by David' -ForegroundColor Cyan
+    Write-Host '==============================================' -ForegroundColor DarkGray
+    Write-Host 'Made by David' -ForegroundColor Magenta
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
-    Write-Host '==============================================' -ForegroundColor DarkRed
+    Write-Host 'Minecraft Mod Scanner' -ForegroundColor Green
+    Write-Host '==============================================' -ForegroundColor DarkGray
 }
 
 function Show-LoadingText {
