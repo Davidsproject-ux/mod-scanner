@@ -11,11 +11,8 @@ param(
 )
 
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
-$IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix','7tblpqnv1')
+$IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
-
-$IgnoredExtensions = @('.png', '.lnk', '.md', '.json', '.log')
-$IgnoredPathPattern = '(?i)\\Downloads\\'
 
 function Is-IllegalMod {
     param([string]$Name)
@@ -24,17 +21,6 @@ function Is-IllegalMod {
         if ($lower -like "*${keyword}*") {
             return $true
         }
-    }
-    return $false
-}
-
-function Is-IgnoredFile {
-    param([System.IO.FileInfo]$File)
-    if ($IgnoredExtensions -contains $File.Extension.ToLower()) {
-        return $true
-    }
-    if ($File.FullName -match $IgnoredPathPattern) {
-        return $true
     }
     return $false
 }
@@ -63,8 +49,7 @@ function Show-LoadingText {
 function Get-ModFiles {
     param([string]$RootPath)
     $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
-        ($_.Extension -in $ModExtensions) -and
-        (-not (Is-IgnoredFile $_))
+        $_.Extension -in $ModExtensions
     } | ForEach-Object {
         [PSCustomObject]@{
             Path = $_.FullName
@@ -79,8 +64,7 @@ function Get-RecentChanges {
     param([string]$RootPath, [DateTime]$Threshold)
     $changes = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
-        $_.LastWriteTime -ge $Threshold -and
-        (-not (Is-IgnoredFile $_))
+        $_.LastWriteTime -ge $Threshold
     } | ForEach-Object {
         $changes += [PSCustomObject]@{
             Path = $_.FullName
@@ -95,8 +79,7 @@ function Get-TexturePacks {
     $packs = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         ($_.Extension -in @('.zip', '.rar')) -and
-        ($_.Name -match '(?i)(resource|texture|pack)') -and
-        (-not (Is-IgnoredFile $_))
+        ($_.Name -match '(?i)(resource|texture|pack)')
     } | ForEach-Object {
         $packs += [PSCustomObject]@{
             Path = $_.FullName
@@ -110,8 +93,7 @@ function Get-RecentlyOpenedFiles {
     param([string]$RootPath, [DateTime]$Threshold)
     $opened = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
-        $_.LastAccessTime -ge $Threshold -and
-        (-not (Is-IgnoredFile $_))
+        $_.LastAccessTime -ge $Threshold
     } | ForEach-Object {
         $opened += [PSCustomObject]@{
             Path = $_.FullName
@@ -164,11 +146,6 @@ function Get-ServerLogEntries {
     return $entries | Sort-Object Timestamp -Descending
 }
 
-
-    }
-    return $usbDrives
-}
-
 if (-not $Quiet) {
     Show-Header
     Write-Host "Path: $Path" -ForegroundColor White
@@ -207,6 +184,40 @@ if ($mods.Count -gt 50) {
 }
 Write-Host ""
 
+Write-Host "ZU LETZT GEÖFFNETE DATEIEN (letzte 2 Stunden)" -ForegroundColor Yellow
+Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+$recent | Select-Object -First 20 | ForEach-Object {
+    Write-Host "  $($_.Name)" -ForegroundColor Yellow
+    Write-Host "    $($_.Path)" -ForegroundColor DarkGray
+}
+if ($recent.Count -gt 20) {
+    Write-Host "  ...and $($recent.Count - 20) more files" -ForegroundColor Yellow
+}
+Write-Host ""
+
+if ($DeletedLog) {
+    $deletions = Get-DeletedEntries -LogPath $DeletedLog -Threshold $TimeThreshold
+    Write-Host "Deletion entries in the last $Hours hours: $($deletions.Count)"
+    $deletions | Select-Object -First 20 | ForEach-Object {
+        Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
+    }
+    if ($deletions.Count -gt 20) {
+        Write-Host "  ...and $($deletions.Count - 20) more entries"
+    }
+    Write-Host ""
+}
+
+if ($ServerLog) {
+    $entries = Get-ServerLogEntries -LogPath $ServerLog -PlayerName $Player -Threshold $TimeThreshold
+    $filterText = if ($Player) { " for player `"$Player`"" } else { "" }
+    Write-Host "Server log entries$filterText in the last $Hours hours: $($entries.Count)"
+    $entries | Select-Object -First 20 | ForEach-Object {
+        Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
+    }
+    if ($entries.Count -gt 20) {
+        Write-Host "  ...and $($entries.Count - 20) more lines"
+    }
+    Write-Host ""
 }
 
 if (-not $Quiet) {
