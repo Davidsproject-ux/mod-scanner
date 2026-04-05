@@ -53,7 +53,7 @@ function Show-LoadingText {
     }
     Write-Host ''
     Start-Sleep -Milliseconds 300
-    Write-Host 'Done scanning.' -ForegroundColor Green
+    Write-Host 'Done scanning.' -ForegroundColor DarkRed
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
 
@@ -121,9 +121,9 @@ foreach ($launcher in $LauncherPaths.Keys) {
         foreach ($mod in $mods) {
             $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
             Write-Host "  $($mod.Name)" -ForegroundColor $color
-            Start-Sleep -Seconds 1
+            Start-Sleep -Seconds 0
             Write-Host "    $($mod.Path)" -ForegroundColor DarkGray
-            Start-Sleep -Seconds 1
+            Start-Sleep -Seconds 0
         }
         Write-Host "  ...$($mods.Count) mods total" -ForegroundColor Cyan
     }
