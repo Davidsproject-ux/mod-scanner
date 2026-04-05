@@ -1,8 +1,8 @@
 # Made by David
-# Cloudsmp.net
+# Cloudsmp.net Cheat finder
 
 param(
-    [string]$Path = "$env:APPDATA\.minecraft",
+    [string]$Path = $(Get-Location).Path,
     [double]$Hours = 3.0,
     [string]$ServerLog,
     [string]$Player,
@@ -85,9 +85,15 @@ function Get-ServerLogEntries {
 }
 
 if (-not $Quiet) {
-    Write-Host "Minecraft Mod Scanner starting..."
+    Write-Host "=============================================="
+    Write-Host "Minecraft Mod Scanner starting..." -ForegroundColor Cyan
     Write-Host "Path: $Path"
     Write-Host "Hours: $Hours"
+    Write-Host ""
+    Write-Host "Loading mods..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+    Write-Host "Scanning path: $Path" -ForegroundColor Green
+    Write-Host "=============================================="
     Write-Host ""
 }
 
