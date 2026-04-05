@@ -15,17 +15,6 @@ if ($UnsecurePassword -ne "cloudsmp") {
 
 # ================= Parameters =================
 $Hours = 3
-
-# Launcher Mod-Ordner ONLY (keine Downloads)
-$LauncherPaths = @(
-    "$env:APPDATA\.minecraft\mods",
-    "$env:APPDATA\.minecraft\resourcepacks",
-    "$env:APPDATA\.minecraft\config",
-    "$env:USERPROFILE\.lunarclient\offline\multiver",
-    "$env:USERPROFILE\.lunarclient\profiles",
-    "$env:USERPROFILE\MultiMC\instances"
-)
-
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @(
     'clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst',
@@ -93,7 +82,6 @@ function Get-TexturePacks {
 
 # --- Feather FIX ---
 function Get-Feather {
-
     $root = "$env:USERPROFILE\.feather\user-mods"
     if (!(Test-Path $root)) { return $null }
 
@@ -104,83 +92,63 @@ function Get-Feather {
         $chosen = $versions[0]
     } else {
         Write-Host "`nFeather Versions:" -ForegroundColor Cyan
-        for ($i=0;$i -lt $versions.Count;$i++) {
-            Write-Host "[$($i+1)] $($versions[$i].Name)"
-        }
-
+        for ($i=0;$i -lt $versions.Count;$i++) { Write-Host "[$($i+1)] $($versions[$i].Name)" }
         $input = Read-Host "Select version"
-
         if ($input -match '^\d+$') {
             $idx = [int]$input - 1
-            if ($idx -ge 0 -and $idx -lt $versions.Count) {
-                $chosen = $versions[$idx]
-            } else {
-                $chosen = $versions[0]
-            }
+            if ($idx -ge 0 -and $idx -lt $versions.Count) { $chosen = $versions[$idx] } else { $chosen = $versions[0] }
         } else {
             $chosen = $versions | Where-Object { $_.Name -like "$input*" } | Select-Object -First 1
             if (-not $chosen) { $chosen = $versions[0] }
         }
     }
 
-    # 🔥 AUTO DETECT Feather Mods
     $base = $chosen.FullName
-
-    $possiblePaths = @(
-        $base,
-        "$base\mods",
-        "$base\.minecraft\mods"
-    )
-
+    $possiblePaths = @($base, "$base\mods", "$base\.minecraft\mods")
     foreach ($p in $possiblePaths) {
         if (Test-Path $p) {
             $mods = Get-ChildItem $p -Recurse -Include *.jar -File -ErrorAction SilentlyContinue
-            if ($mods.Count -gt 0) {
-                Write-Host "Found Feather mods in: $p" -ForegroundColor Green
-                return $p
-            }
+            if ($mods.Count -gt 0) { Write-Host "Found Feather mods in: $p" -ForegroundColor Green; return $p }
         }
     }
-
     Write-Host "No Feather mods found!" -ForegroundColor Yellow
     return $base
+}
+
+# --- Main Scan Funktion für jeden Launcher ---
+function Scan-Launcher {
+    param([string]$Name, [string[]]$Paths)
+    Write-Host "`n==== $Name ====" -ForegroundColor Cyan
+    $mods = Get-ModFiles -RootPaths $Paths
+    if ($mods.Count -eq 0) {
+        Write-Host "  Keine Mods gefunden." -ForegroundColor DarkGray
+    } else {
+        foreach ($mod in $mods) {
+            $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
+            Write-Host ("  {0,-50}" -f $mod.Name) -ForegroundColor $color
+            Write-Host ("    {0}" -f $mod.Path) -ForegroundColor DarkGray
+        }
+    }
 }
 
 # ================= Main =================
 Show-Header
 Animate-Loading -Text "Scanning launcher mod folders..."
 
-# Alle Launcher-Ordner + Feather hinzufügen
-$allPaths = $LauncherPaths + @(Get-Feather)
+# Vanilla Minecraft
+$vanillaPaths = @("$env:APPDATA\.minecraft\mods","$env:APPDATA\.minecraft\resourcepacks","$env:APPDATA\.minecraft\config")
+Scan-Launcher -Name "Vanilla Minecraft" -Paths $vanillaPaths
 
-$mods         = Get-ModFiles -RootPaths $allPaths
-$texturePacks = Get-TexturePacks -RootPaths $allPaths
+# Lunar Client
+$lunarPaths = @("$env:USERPROFILE\.lunarclient\offline\multiver","$env:USERPROFILE\.lunarclient\profiles")
+Scan-Launcher -Name "Lunar Client" -Paths $lunarPaths
 
-# -------- Texture Packs --------
-Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
-if ($texturePacks.Count -eq 0) {
-    Write-Host "  Keine Texturepacks gefunden." -ForegroundColor DarkGray
-} else {
-    $texturePacks | ForEach-Object {
-        Write-Host "  $($_.Name)" -ForegroundColor Magenta
-        Write-Host "    $($_.Path)" -ForegroundColor DarkGray
-    }
-}
+# MultiMC
+$multiMCPaths = @("$env:USERPROFILE\MultiMC\instances")
+Scan-Launcher -Name "MultiMC" -Paths $multiMCPaths
 
-# -------- Mods --------
-Write-Host "`nMODS" -ForegroundColor Cyan
-if ($mods.Count -eq 0) {
-    Write-Host "  Keine Mods in Launcher-Ordnern gefunden." -ForegroundColor DarkGray
-} else {
-    $counter = 0
-    foreach ($mod in $mods) {
-        $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
-        Write-Host ("  {0,-50}" -f $mod.Name) -ForegroundColor $color
-        Write-Host ("    {0}" -f $mod.Path) -ForegroundColor DarkGray
-        Start-Sleep -Milliseconds 50  # kleine Animation beim Anzeigen
-        $counter++
-        if ($counter -ge 50) { Write-Host "  ...and $($mods.Count - 50) more mod files" -ForegroundColor Cyan; break }
-    }
-}
+# Feather
+$featherPath = Get-Feather
+if ($featherPath) { Scan-Launcher -Name "Feather" -Paths @($featherPath) }
 
 Write-Host "`nScan abgeschlossen." -ForegroundColor Green
