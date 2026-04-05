@@ -19,7 +19,7 @@ $TimeThreshold = (Get-Date).AddHours(-$Hours)
 $LauncherPaths = @{
     "Lunar Client"  = "$env:USERPROFILE\.lunarclient\offline\multiver"
     "Feather Client"= "$env:USERPROFILE\.feather\instances"
-    "Prism Client"  = "$env:USERPROFILE\.prism\instances"
+    "Prism Client"  = "$env:USERPROFILE\.prism\instances\mods"
     "MultiMC"       = "$env:USERPROFILE\MultiMC\instances"
 }
 
