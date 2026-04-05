@@ -46,22 +46,27 @@ function Show-LoadingText {
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
 
-function Has-CloudSMPJoin {
-    param([string]$RootPath)
-    $logFiles = Get-ChildItem -Path $RootPath -Recurse -File -Include *.log, launcher_log.txt -ErrorAction SilentlyContinue
-    foreach ($file in $logFiles) {
-        try {
-            $content = Get-Content -Path $file.FullName -ErrorAction SilentlyContinue
-            foreach ($line in $content) {
-                if ($line -match '(?i)cloudsmp\.net|cloudsmp') {
-                    return $true
-                }
-            }
-        } catch {
-            continue
-        }
+function Get-ServerJoinInfo {
+    param([string]$LogPath)
+    if (-not (Test-Path $LogPath)) {
+        return $null
     }
-    return $false
+    $joined = $false
+    $joinLines = @()
+    try {
+        Get-Content -Path $LogPath -ErrorAction SilentlyContinue | ForEach-Object {
+            if ($_ -match '(?i)cloudsmp\.net|cloudsmp') {
+                $joined = $true
+                $joinLines += $_
+            }
+        }
+    } catch {
+        return $null
+    }
+    return [PSCustomObject]@{
+        Joined = $joined
+        Lines = $joinLines
+    }
 }
 
 function Get-ModFiles {
@@ -169,10 +174,18 @@ if (-not $Quiet) {
     Write-Host "Path: $Path" -ForegroundColor White
     Write-Host "Hours: $Hours" -ForegroundColor White
     Write-Host ""
-    if (-not (Has-CloudSMPJoin -RootPath $Path)) {
-        Write-Host 'CloudSMP connection not detected.' -ForegroundColor Red
-        Write-Host 'Der Scan läuft nur, wenn CloudSMP in den Logs gefunden wird.' -ForegroundColor Red
-        exit 1
+    if ($ServerLog) {
+        $joinInfo = Get-ServerJoinInfo -LogPath $ServerLog
+        if ($joinInfo -ne $null) {
+            if ($joinInfo.Joined) {
+                Write-Host 'CloudSMP connection detected in server log.' -ForegroundColor Green
+            } else {
+                Write-Host 'CloudSMP connection not detected in server log.' -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host 'Server log konnte nicht gelesen werden.' -ForegroundColor Red
+        }
+        Write-Host ""
     }
     Show-LoadingText
     Write-Host "Scanning path: $Path" -ForegroundColor Green
