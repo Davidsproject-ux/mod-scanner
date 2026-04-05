@@ -99,7 +99,26 @@ function Get-Feather {
         }
     }
 
-    return $chosen.FullName
+    # 🔥 AUTO DETECT (WICHTIGSTER FIX)
+    $base = $chosen.FullName
+
+    $possiblePaths = @(
+        $base,
+        "$base\mods",
+        "$base\.minecraft\mods"
+    )
+
+    foreach ($p in $possiblePaths) {
+        if (Test-Path $p) {
+            $mods = Get-ChildItem $p -Recurse -Include *.jar -File -ErrorAction SilentlyContinue
+            if ($mods.Count -gt 0) {
+                return $p
+            }
+        }
+    }
+
+    # fallback
+    return $base
 }
 
 # --- Start ---
