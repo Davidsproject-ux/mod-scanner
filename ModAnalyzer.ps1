@@ -15,7 +15,6 @@ if ($UnsecurePassword -ne "cloudsmp") {
 
 # ================= Parameters =================
 $Hours = 3
-$ApiUrl = "https://dc7f5c37-2cde-4a99-8929-bc490897ba68-00-xxwbc3cljz5o.janeway.replit.dev/api"
 
 # Launcher Mod-Ordner ONLY (keine Downloads)
 $LauncherPaths = @(
@@ -46,11 +45,10 @@ function Is-IllegalMod { param([string]$Name)
 
 function Show-Header {
     Clear-Host
-    Write-Host '==============================================' -ForegroundColor DarkGray
-    Write-Host 'Made by David' -ForegroundColor Magenta
+    Write-Host '==============================================' -ForegroundColor Blue
+    Write-Host 'Made by David' -ForegroundColor Red
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
-    Write-Host 'Minecraft Mod Scanner (Launcher-only)' -ForegroundColor Green
-    Write-Host '==============================================' -ForegroundColor DarkGray
+    Write-Host '==============================================' -ForegroundColor Blue
 }
 
 function Animate-Loading {
@@ -119,51 +117,10 @@ if ($mods.Count -eq 0) {
         $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
         Write-Host ("  {0,-50}" -f $mod.Name) -ForegroundColor $color
         Write-Host ("    {0}" -f $mod.Path) -ForegroundColor DarkGray
-        Start-Sleep -Milliseconds 50
+        Start-Sleep -Milliseconds 50  # kleine Animation beim Anzeigen
         $counter++
         if ($counter -ge 50) { Write-Host "  ...and $($mods.Count - 50) more mod files" -ForegroundColor Cyan; break }
     }
 }
 
-Write-Host "`nScan abgeschlossen." -ForegroundColor Green
-
-# ================= An Website senden =================
-Write-Host "`n----------------------------------------------" -ForegroundColor DarkGray
-Write-Host "Sende Ergebnisse an SS-Dashboard..." -ForegroundColor Yellow
-
-$PlayerName = $env:USERNAME
-try { $PlayerName = (Get-WMIObject Win32_ComputerSystem).UserName } catch {}
-
-$osInfo = ([System.Environment]::OSVersion).VersionString
-$javaVer = $null
-try { $javaVer = (java -version 2>&1 | Select-Object -First 1).ToString() } catch {}
-
-$modList = @()
-foreach ($mod in $mods) {
-    $cat = if (Is-IllegalMod $mod.Name) { "cheat" } else { "allowed" }
-    $modList += @{
-        name        = [System.IO.Path]::GetFileNameWithoutExtension($mod.Name)
-        fileName    = $mod.Name
-        version     = $null
-        category    = $cat
-        description = $null
-    }
-}
-
-$body = @{
-    playerName  = $PlayerName
-    osInfo      = $osInfo
-    javaVersion = $javaVer
-    mods        = $modList
-} | ConvertTo-Json -Depth 5
-
-try {
-    Invoke-RestMethod -Uri "$ApiUrl/reports" -Method Post -Body $body -ContentType "application/json" | Out-Null
-    Write-Host "Ergebnisse erfolgreich gesendet!" -ForegroundColor Green
-    Write-Host "Schau jetzt auf dein Dashboard." -ForegroundColor Cyan
-} catch {
-    Write-Host "Fehler beim Senden: $_" -ForegroundColor Red
-}
-
-Write-Host '==============================================' -ForegroundColor DarkGray
-Read-Host "`nEnter druecken zum Beenden"
+Write-Host "`nScan abgeschlossen!!." -ForegroundColor Red
