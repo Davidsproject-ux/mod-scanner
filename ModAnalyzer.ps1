@@ -132,7 +132,7 @@ foreach ($launcher in $LauncherPaths.Keys) {
         "Feather Client" { $path = Get-FeatherModsPath }
     }
 
-    Write-Host "`n$launcher:" -ForegroundColor Cyan
+    Write-Host "`n${launcher}:" -ForegroundColor Cyan
 
     if (-not $path -or -not (Test-Path $path)) {
         Write-Host "No mods found" -ForegroundColor Yellow
