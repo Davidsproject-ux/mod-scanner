@@ -164,17 +164,6 @@ function Get-ServerLogEntries {
     return $entries | Sort-Object Timestamp -Descending
 }
 
-function Get-UsbDrives {
-    $usbDrives = @()
-    $volumes = @()
-    if (Get-Command Get-Volume -ErrorAction SilentlyContinue) {
-        $volumes = Get-Volume -DriveType Removable -ErrorAction SilentlyContinue
-    } else {
-        $volumes = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=2" -ErrorAction SilentlyContinue | ForEach-Object {
-            [PSCustomObject]@{DriveLetter = $_.DeviceID; FileSystemLabel = $_.VolumeName}
-        }
-    }
-
     foreach ($vol in $volumes) {
         $letter = if ($vol.DriveLetter) { $vol.DriveLetter } else { $vol.DeviceID }
         $label = $vol.FileSystemLabel -or $vol.Label -or $vol.VolumeName
