@@ -19,7 +19,6 @@ if ($plain -ne "cloudsmp.net") {
     Write-Host "Wrong password!" -ForegroundColor Red
     exit
 }
-)
 
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix','7tblpqnv1')
