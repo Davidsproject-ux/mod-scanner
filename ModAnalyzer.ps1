@@ -14,11 +14,10 @@ if ($PasswordInput -ne "cloudsmp") {
 # Config
 $Hours = 3
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
-
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
 
-# --- Scan Geschwindigkeit (in Millisekunden) ---
+# Scan Geschwindigkeit
 $SleepLoading = 5
 $SleepModDisplay = 0
 
@@ -26,7 +25,7 @@ $SleepModDisplay = 0
 $LauncherPaths = @{
     "Vanilla"        = "$env:APPDATA\.minecraft\mods"
     "Lunar Client"   = "$env:USERPROFILE\.lunarclient\offline\multiver"
-    "Feather Client" = "$env:USERPROFILE\.feather\instances"
+    "Feather Client" = "$env:USERPROFILE\.feather"
     "Prism Client"   = "$env:APPDATA\PrismLauncher\instances"
     "MultiMC"        = "$env:USERPROFILE\MultiMC\instances"
     "Modrinth"       = "$env:APPDATA\ModrinthApp\profiles"
@@ -34,7 +33,6 @@ $LauncherPaths = @{
 }
 
 # --- Functions ---
-
 function Is-IllegalMod {
     param([string]$Name)
     $lower = $Name.ToLower()
@@ -77,6 +75,7 @@ function Get-ModFiles {
     return $mods | Sort-Object Modified -Descending
 }
 
+# --- Universal Instance / Version Selector ---
 function Select-Instance {
     param(
         [string]$RootPath,
@@ -92,12 +91,12 @@ function Select-Instance {
     if ($instances.Count -eq 1) {
         $chosen = $instances[0]
     } else {
-        Write-Host "Multiple $LauncherName instances found:" -ForegroundColor Cyan
+        Write-Host "Multiple $LauncherName versions/profiles found:" -ForegroundColor Cyan
         for ($i = 0; $i -lt $instances.Count; $i++) {
             Write-Host "  [$($i+1)] $($instances[$i])"
         }
 
-        $choice = Read-Host "Choose instance (number or name)"
+        $choice = Read-Host "Choose number or name"
         $chosen = $null
 
         if ($choice -match '^\d+$') {
@@ -130,33 +129,26 @@ foreach ($launcher in $LauncherPaths.Keys) {
     $path = $null
 
     switch ($launcher) {
-
         "Vanilla" {
             $path = $root
         }
-
         "Lunar Client" {
             $path = $root
         }
-
         "Prism Client" {
             $path = Select-Instance $root "Prism" "minecraft\mods"
         }
-
         "MultiMC" {
             $path = Select-Instance $root "MultiMC" "minecraft\mods"
         }
-
         "Modrinth" {
             $path = Select-Instance $root "Modrinth" "mods"
         }
-
         "CurseForge" {
             $path = Select-Instance $root "CurseForge" "mods"
         }
-
         "Feather Client" {
-            $path = Select-Instance $root "Feather" ".minecraft\mods"
+            $path = Select-Instance $root "Feather" "user-mods"
         }
     }
 
@@ -174,9 +166,6 @@ foreach ($launcher in $LauncherPaths.Keys) {
         Write-Host "  No mods found." -ForegroundColor Yellow
     } else {
         foreach ($mod in $mods) {
-            # Optional: nur neue Mods scannen
-            # if ($mod.Modified -lt $TimeThreshold) { continue }
-
             $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
             Write-Host "  $($mod.Name)" -ForegroundColor $color
             Write-Host "    $($mod.Path)" -ForegroundColor DarkGray
