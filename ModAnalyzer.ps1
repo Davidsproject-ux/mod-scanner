@@ -38,7 +38,7 @@ function Is-IllegalMod {
 
 function Show-Header {
     Clear-Host
-    Write-Host '==============================================' -ForegroundColor DarRed
+    Write-Host '==============================================' -ForegroundColor DarkRed
     Write-Host 'Made by David' -ForegroundColor Red
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Red
     Write-Host 'Bist du ein Cheater?😒' -ForegroundColor Red
