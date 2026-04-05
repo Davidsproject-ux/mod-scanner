@@ -1,3 +1,9 @@
+
+#==============================================
+# Made by David
+# Cloudsmp.net Cheat finder
+# Minecraft Mod Scanner (Launcher Edition)
+#==============================================
 # --- Header / Loading ---
 function Show-Header {
     Clear-Host
@@ -8,57 +14,92 @@ function Show-Header {
     Write-Host '==============================================' -ForegroundColor DarkRed
 }
 
-# --- Feather FIX ---
-function Get-Feather {
+# --- Passwortschutz ---
+$PasswordInput = Read-Host "Enter password"
+if ($PasswordInput -ne "cloudsmp") {
+    Write-Host "Incorrect password!" -ForegroundColor Red
+    exit
+}
 
-    $root = "$env:USERPROFILE\.feather\user-mods"
-    if (!(Test-Path $root)) { return $null }
+# --- Config ---
+$Hours = 3
+$TimeThreshold = (Get-Date).AddHours(-$Hours)
 
-    $versions = Get-ChildItem $root -Directory
-    if ($versions.Count -eq 0) { return $null }
+# --- Launcher Mod Paths ---
+$LauncherPaths = @{
+    "Lunar Client"  = "$env:USERPROFILE\.lunarclient\offline\multiver"
+    "Feather Client"= "$env:USERPROFILE\.feather\instances"
+    "Prism Client"  = "$env:USERPROFILE\.PrismLauncher\instances\<Version>\minecraft\mods"
+    "MultiMC"       = "$env:USERPROFILE\MultiMC\instances"
+}
 
-    if ($versions.Count -eq 1) {
-        $chosen = $versions[0]
+$ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
+$IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
+
+# --- Functions ---
+function Is-IllegalMod {
+    param([string]$Name)
+    $lower = $Name.ToLower()
+    foreach ($keyword in $IllegalModNames) {
+        if ($lower -like "*${keyword}*") { return $true }
+    }
+    return $false
+}
+
+function Show-Header {
+    Clear-Host
+    Write-Host '==============================================' -ForegroundColor DarkGray
+    Write-Host 'Made by David' -ForegroundColor Magenta
+    Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
+    Write-Host 'Minecraft Launcher Mod Scanner' -ForegroundColor Green
+    Write-Host '==============================================' -ForegroundColor DarkGray
+}
+
+function Show-LoadingText {
+    $text = 'Scanning launchers...'
+    foreach ($ch in $text.ToCharArray()) {
+        Write-Host -NoNewline $ch -ForegroundColor Yellow
+        Start-Sleep -Milliseconds 50
+    }
+    Write-Host ''
+    Start-Sleep -Milliseconds 300
+    Write-Host 'Done scanning.' -ForegroundColor Green
+    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+}
+
+function Get-ModFiles {
+    param([string]$RootPath)
+    if (-not (Test-Path $RootPath)) { return @() }
+    $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object { $_.Extension -in $ModExtensions } | ForEach-Object {
+        [PSCustomObject]@{
+            Path = $_.FullName
+            Name = $_.Name
+            Modified = $_.LastWriteTime
+        }
+    }
+    return $mods | Sort-Object Modified -Descending
+}
+
+# --- Main ---
+Show-Header
+Show-LoadingText
+
+foreach ($launcher in $LauncherPaths.Keys) {
+    $path = $LauncherPaths[$launcher]
+    Write-Host "`n$launcher Mods:" -ForegroundColor Cyan
+    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+    $mods = Get-ModFiles -RootPath $path
+    if ($mods.Count -eq 0) {
+        Write-Host "  No mods found." -ForegroundColor Yellow
     } else {
-        Write-Host "`nFeather Versions:" -ForegroundColor Cyan
-        for ($i=0;$i -lt $versions.Count;$i++) {
-            Write-Host "[$($i+1)] $($versions[$i].Name)"
+        $mods | ForEach-Object {
+            $color = if (Is-IllegalMod $_.Name) { 'Red' } else { 'Green' }
+            Write-Host "  $($_.Name)" -ForegroundColor $color
         }
-
-        $input = Read-Host "Select version"
-
-        if ($input -match '^\d+$') {
-            $idx = [int]$input - 1
-            if ($idx -ge 0 -and $idx -lt $versions.Count) {
-                $chosen = $versions[$idx]
-            } else {
-                $chosen = $versions[0]
-            }
-        } else {
-            $chosen = $versions | Where-Object { $_.Name -like "$input*" } | Select-Object -First 1
-            if (-not $chosen) { $chosen = $versions[0] }
-        }
+        Write-Host "  ...$($mods.Count) mods total" -ForegroundColor Cyan
     }
+}
 
-    # 🔥 AUTO DETECT Feather Mods
-    $base = $chosen.FullName
-
-    $possiblePaths = @(
-        $base,
-        "$base\mods",
-        "$base\.minecraft\mods"
-    )
-
-    foreach ($p in $possiblePaths) {
-        if (Test-Path $p) {
-            $mods = Get-ChildItem $p -Recurse -Include *.jar -File -ErrorAction SilentlyContinue
-            if ($mods.Count -gt 0) {
-                Write-Host "Found Feather mods in: $p" -ForegroundColor Green
-                return $p
-            }
-        }
-    }
-
-    Write-Host "No Feather mods found!" -ForegroundColor Yellow
+Write-Host "`nScan complete." -ForegroundColor Greenor Yellow
     return $base
 }
