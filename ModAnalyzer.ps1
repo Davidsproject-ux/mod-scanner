@@ -1,157 +1,108 @@
-# ===============================================
-# Made by David
-# Cloudsmp.net Cheat finder
-# Minecraft Mod Scanner (Launcher Edition)
-# ===============================================
+# Cloudsmp Mod Scanner (Stable)
 
 # Passwort
-$PasswordInput = Read-Host "Enter password"
-if ($PasswordInput -ne "cloudsmp") {
-    Write-Host "Incorrect password!" -ForegroundColor Red
+if ((Read-Host "Enter password") -ne "cloudsmp") {
+    Write-Host "Wrong password" -ForegroundColor Red
     exit
 }
 
 # Config
-$ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
-$IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
+$ext = @('.jar','.litemod','.mcpack','.mcaddon','.modpack')
+$bad = @('meteor','impact','wurst','aristois','liquidbounce','xray','killaura','hack','cheat','baritone')
 
-# Launcher Paths
-$LauncherPaths = @{
-    "Vanilla"        = "$env:APPDATA\.minecraft\mods"
-    "Lunar Client"   = "$env:USERPROFILE\.lunarclient\offline\multiver"
-    "Feather Client" = "$env:USERPROFILE\.feather\user-mods"
-    "Prism Client"   = "$env:APPDATA\PrismLauncher\instances"
-    "MultiMC"        = "$env:USERPROFILE\MultiMC\instances"
-    "Modrinth"       = "$env:APPDATA\ModrinthApp\profiles"
-    "CurseForge"     = "$env:USERPROFILE\curseforge\minecraft\Instances"
+# Paths
+$paths = @{
+    "Vanilla" = "$env:APPDATA\.minecraft\mods"
+    "Feather" = "$env:USERPROFILE\.feather\user-mods"
+    "Prism"   = "$env:APPDATA\PrismLauncher\instances"
 }
 
-# --- Functions ---
+function Scan($p) {
+    if (!(Test-Path $p)) { return @() }
+    Get-ChildItem $p -Recurse -File | Where {$_.Extension -in $ext}
+}
 
-function Is-IllegalMod {
-    param([string]$Name)
-    $lower = $Name.ToLower()
-    foreach ($keyword in $IllegalModNames) {
-        if ($lower -like "*$keyword*") { return $true }
+function Check($n) {
+    $l = $n.ToLower()
+    foreach ($b in $bad) {
+        if ($l -like "*$b*") { return $true }
     }
     return $false
 }
 
-function Get-ModFiles {
-    param([string]$RootPath)
-
-    if (-not (Test-Path $RootPath)) { return @() }
-
-    Get-ChildItem -Path $RootPath -Recurse -File |
-        Where-Object { $_.Extension -in $ModExtensions } |
-        Sort-Object LastWriteTime -Descending
-}
-
-function Select-Instance {
-    param($RootPath, $Name, $SubPath)
-
-    if (-not (Test-Path $RootPath)) { return $null }
-
-    $list = Get-ChildItem $RootPath -Directory | Select-Object -Expand Name
-    if ($list.Count -eq 0) { return $null }
-
-    if ($list.Count -eq 1) {
-        $chosen = $list[0]
-    } else {
-        Write-Host "`n$Name versions:" -ForegroundColor Cyan
-        for ($i=0;$i -lt $list.Count;$i++) {
-            Write-Host "[$($i+1)] $($list[$i])"
-        }
-
-        $input = Read-Host "Select"
-        if ($input -match '^\d+$') {
-            $idx = [int]$input - 1
-            if ($idx -ge 0 -and $idx -lt $list.Count) {
-                $chosen = $list[$idx]
-            } else {
-                $chosen = $list[0]
-            }
-        } else {
-            $chosen = $list | Where-Object { $_ -like "$input*" } | Select-Object -First 1
-            if (-not $chosen) { $chosen = $list[0] }
-        }
-    }
-
-    return Join-Path $RootPath "$chosen\$SubPath"
-}
-
-function Get-FeatherModsPath {
-
+function Feather() {
     $root = "$env:USERPROFILE\.feather\user-mods"
-    if (-not (Test-Path $root)) { return $null }
+    if (!(Test-Path $root)) { return $null }
 
-    $versions = Get-ChildItem $root -Directory | Select-Object -Expand Name
-    if ($versions.Count -eq 0) { return $null }
+    $v = Get-ChildItem $root -Directory
+    if ($v.Count -eq 0) { return $null }
 
-    if ($versions.Count -eq 1) {
-        $chosen = $versions[0]
-    } else {
-        Write-Host "`nFeather versions:" -ForegroundColor Cyan
-        for ($i=0;$i -lt $versions.Count;$i++) {
-            Write-Host "[$($i+1)] $($versions[$i])"
-        }
+    if ($v.Count -eq 1) { return $v[0].FullName }
 
-        $input = Read-Host "Select version"
-        if ($input -match '^\d+$') {
-            $idx = [int]$input - 1
-            if ($idx -ge 0 -and $idx -lt $versions.Count) {
-                $chosen = $versions[$idx]
-            } else {
-                $chosen = $versions[0]
-            }
-        } else {
-            $chosen = $versions | Where-Object { $_ -like "$input*" } | Select-Object -First 1
-            if (-not $chosen) { $chosen = $versions[0] }
-        }
+    Write-Host "Feather Versions:" -ForegroundColor Cyan
+    for ($i=0;$i -lt $v.Count;$i++) {
+        Write-Host "[$($i+1)] $($v[$i].Name)"
     }
 
-    return Join-Path $root $chosen
+    $c = Read-Host "Select"
+    if ($c -match '^\d+$') {
+        return $v[[int]$c-1].FullName
+    }
+
+    return $v[0].FullName
 }
 
-# --- Start ---
-Clear-Host
-Write-Host "Scanning launchers..." -ForegroundColor Yellow
+function Select($root,$sub) {
+    if (!(Test-Path $root)) { return $null }
+    $v = Get-ChildItem $root -Directory
+    if ($v.Count -eq 0) { return $null }
+    if ($v.Count -eq 1) { return "$($v[0].FullName)\$sub" }
 
-foreach ($launcher in $LauncherPaths.Keys) {
-
-    $root = $LauncherPaths[$launcher]
-    $path = $null
-
-    switch ($launcher) {
-        "Vanilla"        { $path = $root }
-        "Lunar Client"   { $path = $root }
-        "Prism Client"   { $path = Select-Instance $root "Prism" "minecraft\mods" }
-        "MultiMC"        { $path = Select-Instance $root "MultiMC" "minecraft\mods" }
-        "Modrinth"       { $path = Select-Instance $root "Modrinth" "mods" }
-        "CurseForge"     { $path = Select-Instance $root "CurseForge" "mods" }
-        "Feather Client" { $path = Get-FeatherModsPath }
+    for ($i=0;$i -lt $v.Count;$i++) {
+        Write-Host "[$($i+1)] $($v[$i].Name)"
     }
 
-    Write-Host "`n$launcher:" -ForegroundColor Cyan
+    $c = Read-Host "Select"
+    if ($c -match '^\d+$') {
+        return "$($v[[int]$c-1].FullName)\$sub"
+    }
 
-    if (-not $path -or -not (Test-Path $path)) {
-        Write-Host "No mods found" -ForegroundColor Yellow
+    return "$($v[0].FullName)\$sub"
+}
+
+# Start
+Write-Host "Scanning..." -ForegroundColor Yellow
+
+foreach ($k in $paths.Keys) {
+
+    $p = $null
+
+    if ($k -eq "Feather") { $p = Feather }
+    elseif ($k -eq "Prism") { $p = Select $paths[$k] "minecraft\mods" }
+    else { $p = $paths[$k] }
+
+    Write-Host "`n$k:" -ForegroundColor Cyan
+
+    if (!$p -or !(Test-Path $p)) {
+        Write-Host "No mods" -ForegroundColor Yellow
         continue
     }
 
-    $mods = Get-ModFiles $path
-
+    $mods = Scan $p
     if ($mods.Count -eq 0) {
-        Write-Host "No mods found" -ForegroundColor Yellow
+        Write-Host "No mods" -ForegroundColor Yellow
         continue
     }
 
-    foreach ($mod in $mods) {
-        $color = if (Is-IllegalMod $mod.Name) { "Red" } else { "Green" }
-        Write-Host $mod.Name -ForegroundColor $color
+    foreach ($m in $mods) {
+        if (Check $m.Name) {
+            Write-Host $m.Name -ForegroundColor Red
+        } else {
+            Write-Host $m.Name -ForegroundColor Green
+        }
     }
 
-    Write-Host "$($mods.Count) mods found" -ForegroundColor DarkGray
+    Write-Host "$($mods.Count) mods" -ForegroundColor DarkGray
 }
 
-Write-Host "`nScan complete." -ForegroundColor Green
+Write-Host "Done" -ForegroundColor Green
