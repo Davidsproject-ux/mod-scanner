@@ -11,7 +11,7 @@ param(
 )
 
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
-$IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
+$IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix','7tblpqnv1')
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
 
 function Is-IllegalMod {
@@ -49,7 +49,8 @@ function Show-LoadingText {
 function Get-ModFiles {
     param([string]$RootPath)
     $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
-        $_.Extension -in $ModExtensions
+        ($_.Extension -in $ModExtensions) -and
+        ($_.FullName -notmatch '(?i)\\Downloads\\')
     } | ForEach-Object {
         [PSCustomObject]@{
             Path = $_.FullName
