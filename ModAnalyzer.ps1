@@ -16,12 +16,11 @@ if ($UnsecurePassword -ne "cloudsmp") {
 
 # ================= Parameters =================
 param(
-    [double]$Hours,
+    [double]$Hours = 3.0,
     [string]$ServerLog,
     [string]$Player,
     [string]$DeletedLog,
-    [switch]$Quiet,
-    [int]$Delay
+    [switch]$Quiet
 )
 
 if (-not $Hours) { $Hours = 3 }
