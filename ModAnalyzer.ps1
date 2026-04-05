@@ -102,4 +102,3 @@ foreach ($launcher in $LauncherPaths.Keys) {
 
 Write-Host "`nScan complete." -ForegroundColor Greenor Yellow
     return $base
-}
