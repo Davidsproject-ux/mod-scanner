@@ -52,7 +52,7 @@ function Show-LoadingText {
         Start-Sleep -Milliseconds 10
     }
     Write-Host ''
-    Start-Sleep -Milliseconds 100
+    Start-Sleep -Milliseconds 10
     Write-Host 'Done scanning.' -ForegroundColor DarkRed
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
