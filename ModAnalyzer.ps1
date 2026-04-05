@@ -26,6 +26,10 @@ $LauncherPaths = @{
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 $IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liquidbounce','wurst','baritone','xray','killaura','nuker','velocity','speed','cheat','hack','phobos','forcefield','matrix')
 
+# --- Scan Geschwindigkeit (in Millisekunden) ---
+$SleepLoading = 5      # Ladeanimation pro Buchstabe
+$SleepModDisplay = 0   # Pause beim Anzeigen jedes Mods
+
 # --- Functions ---
 function Is-IllegalMod {
     param([string]$Name)
@@ -49,10 +53,9 @@ function Show-LoadingText {
     $text = 'Scanning launchers...'
     foreach ($ch in $text.ToCharArray()) {
         Write-Host -NoNewline $ch -ForegroundColor Yellow
-        Start-Sleep -Milliseconds 1
+        Start-Sleep -Milliseconds $SleepLoading
     }
     Write-Host ''
-    Start-Sleep -Milliseconds 1
     Write-Host 'Done scanning.' -ForegroundColor DarkRed
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
@@ -121,9 +124,8 @@ foreach ($launcher in $LauncherPaths.Keys) {
         foreach ($mod in $mods) {
             $color = if (Is-IllegalMod $mod.Name) { 'Red' } else { 'Green' }
             Write-Host "  $($mod.Name)" -ForegroundColor $color
-            Start-Sleep -Seconds 0
+            Start-Sleep -Milliseconds $SleepModDisplay
             Write-Host "    $($mod.Path)" -ForegroundColor DarkGray
-            Start-Sleep -Seconds 0
         }
         Write-Host "  ...$($mods.Count) mods total" -ForegroundColor Cyan
     }
