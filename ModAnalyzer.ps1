@@ -16,13 +16,16 @@ if ($UnsecurePassword -ne "cloudsmp") {
 
 # ================= Parameters =================
 param(
-    [double]$Hours = 3.0,
+    [double]$Hours,
     [string]$ServerLog,
     [string]$Player,
     [string]$DeletedLog,
     [switch]$Quiet,
-    [int]$Delay = 1
+    [int]$Delay
 )
+
+if (-not $Hours) { $Hours = 3 }
+if (-not $Delay) { $Delay = 1 }
 
 # ================= Launcher Paths =================
 # Prism Launcher Versionserkennung
