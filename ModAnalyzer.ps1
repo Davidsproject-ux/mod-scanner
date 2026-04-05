@@ -4,18 +4,18 @@
 # Minecraft Mod Scanner (Launcher Edition)
 # ===============================================
 
-# --- Passwortschutz ---
+# Passwort
 $PasswordInput = Read-Host "Enter password"
 if ($PasswordInput -ne "cloudsmp") {
     Write-Host "Incorrect password!" -ForegroundColor Red
     exit
 }
 
-# --- Config ---
+# Config 
 $Hours = 3
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
 
-# --- Launcher Mod Paths ---
+# Launcher Mod
 $LauncherPaths = @{
     "Lunar Client"  = "$env:USERPROFILE\.lunarclient\offline\multiver"
     "Feather Client"= "$env:USERPROFILE\.feather\instances"
@@ -30,7 +30,7 @@ $IllegalModNames = @('clickcrystal','meteor','impact','future','aristois','liqui
 $SleepLoading = 5      # Ladeanimation pro Buchstabe
 $SleepModDisplay = 0   # Pause beim Anzeigen jedes Mods
 
-# --- Functions ---
+# Functions
 function Is-IllegalMod {
     param([string]$Name)
     $lower = $Name.ToLower()
@@ -84,16 +84,15 @@ function Get-PrismModsPath {
         $chosenVersion = $versions[0]
     } else {
         Write-Host "Multiple Prism versions found:" -ForegroundColor Cyan
-        $i = 1
-        foreach ($v in $versions) {
-            Write-Host "  [$i] $v"
-            $i++
+        for ($i = 0; $i -lt $versions.Count; $i++) {
+            Write-Host "  [$($i+1)] $($versions[$i])"
         }
 
         $choice = Read-Host "Which version do you want to scan? Enter number or version string"
+        $chosenVersion = $null
 
         # Prüfen, ob die Eingabe eine Zahl ist
-        if ($choice -as [int]) {
+        if ($choice -match '^\d+$') {
             $index = [int]$choice - 1
             if ($index -ge 0 -and $index -lt $versions.Count) {
                 $chosenVersion = $versions[$index]
@@ -102,12 +101,21 @@ function Get-PrismModsPath {
                 $chosenVersion = $versions[0]
             }
         } else {
-            # Prüfen, ob die Eingabe als Text existiert
+            # Prüfen auf exakte Übereinstimmung
             if ($versions -contains $choice) {
                 $chosenVersion = $choice
             } else {
-                Write-Host "Version not found. Using first version." -ForegroundColor Yellow
-                $chosenVersion = $versions[0]
+                # Teilstring-Match (z. B. "1.21" -> "1.21.11")
+                $matches = $versions | Where-Object { $_ -like "$choice*" }
+                if ($matches.Count -eq 1) {
+                    $chosenVersion = $matches[0]
+                } elseif ($matches.Count -gt 1) {
+                    Write-Host "Multiple versions match your input. Using first match:" -ForegroundColor Yellow
+                    $chosenVersion = $matches[0]
+                } else {
+                    Write-Host "Version not found. Using first version." -ForegroundColor Yellow
+                    $chosenVersion = $versions[0]
+                }
             }
         }
     }
