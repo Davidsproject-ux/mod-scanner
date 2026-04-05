@@ -77,19 +77,6 @@ function Get-TexturePacks {
     } | Sort-Object Modified -Descending
 }
 
-function Get-RecentlyOpenedFiles {
-    param([string]$RootPath, [DateTime]$Threshold)
-    Get-ChildItem -Path $RootPath -Recurse -File |
-    Where-Object { $_.LastAccessTime -ge $Threshold } |
-    ForEach-Object {
-        [PSCustomObject]@{
-            Path     = $_.FullName
-            Name     = $_.Name
-            Accessed = $_.LastAccessTime
-        }
-    } | Sort-Object Accessed -Descending
-}
-
 function Get-DeletedEntries {
     param([string]$LogPath, [DateTime]$Threshold)
     if (-not (Test-Path $LogPath)) {
@@ -140,7 +127,6 @@ if (-not $Quiet) {
 
 $texturePacks = Get-TexturePacks -RootPath $Path
 $mods         = Get-ModFiles -RootPath $Path
-$recent       = Get-RecentlyOpenedFiles -RootPath $Path -Threshold (Get-Date).AddHours(-2)
 
 # -------- Texture Packs --------
 Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
@@ -157,9 +143,29 @@ $mods | Select-Object -First 50 | ForEach-Object {
     Write-Host "    $($_.Path)" -ForegroundColor DarkGray
 }
 
-# -------- Recently Opened --------
-Write-Host "ZU LETZT GEÖFFNETE DATEIEN (letzte 2 Stunden)" -ForegroundColor Yellow
-$recent | Select-Object -First 20 | ForEach-Object {
-    Write-Host "  $($_.Name)" -ForegroundColor Yellow
-    Write-Host "    $($_.Path)" -ForegroundColor DarkGray
+# -------- Deleted Entries --------
+if ($DeletedLog) {
+    $deletions = Get-DeletedEntries -LogPath $DeletedLog -Threshold $TimeThreshold
+    Write-Host "Deletion entries in the last $Hours hours: $($deletions.Count)"
+    $deletions | Select-Object -First 20 | ForEach-Object {
+        Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
+    }
+    if ($deletions.Count -gt 20) {
+        Write-Host "  ...and $($deletions.Count - 20) more entries"
+    }
 }
+
+# -------- Server Log Entries --------
+if ($ServerLog) {
+    $entries = Get-ServerLogEntries -LogPath $ServerLog -PlayerName $Player -Threshold $TimeThreshold
+    $filterText = if ($Player) { " for player `"$Player`"" } else { "" }
+    Write-Host "Server log entries$filterText in the last $Hours hours: $($entries.Count)"
+    $entries | Select-Object -First 20 | ForEach-Object {
+        Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
+    }
+    if ($entries.Count -gt 20) {
+        Write-Host "  ...and $($entries.Count - 20) more lines"
+    }
+}
+
+if (-not $Quiet) { Write-Host "Done." }
