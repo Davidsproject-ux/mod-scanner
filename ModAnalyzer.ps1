@@ -48,7 +48,7 @@ function Show-LoadingText {
 
 function Get-ModFiles {
     param([string]$RootPath)
-    $mods = Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
+    Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         $_.Extension -in $ModExtensions
     } | ForEach-Object {
         [PSCustomObject]@{
@@ -56,52 +56,46 @@ function Get-ModFiles {
             Name = $_.Name
             Modified = $_.LastWriteTime
         }
-    }
-    return $mods | Sort-Object Modified -Descending
+    } | Sort-Object Modified -Descending
 }
 
 function Get-RecentChanges {
     param([string]$RootPath, [DateTime]$Threshold)
-    $changes = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         $_.LastWriteTime -ge $Threshold
     } | ForEach-Object {
-        $changes += [PSCustomObject]@{
+        [PSCustomObject]@{
             Path = $_.FullName
             Modified = $_.LastWriteTime
         }
-    }
-    return $changes | Sort-Object Modified -Descending
+    } | Sort-Object Modified -Descending
 }
 
 function Get-TexturePacks {
     param([string]$RootPath)
-    $packs = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         ($_.Extension -in @('.zip', '.rar')) -and
         ($_.Name -match '(?i)(resource|texture|pack)')
     } | ForEach-Object {
-        $packs += [PSCustomObject]@{
+        [PSCustomObject]@{
             Path = $_.FullName
+            Name = $_.Name
             Modified = $_.LastWriteTime
         }
-    }
-    return $packs | Sort-Object Modified -Descending
+    } | Sort-Object Modified -Descending
 }
 
 function Get-RecentlyOpenedFiles {
     param([string]$RootPath, [DateTime]$Threshold)
-    $opened = @()
     Get-ChildItem -Path $RootPath -Recurse -File | Where-Object {
         $_.LastAccessTime -ge $Threshold
     } | ForEach-Object {
-        $opened += [PSCustomObject]@{
+        [PSCustomObject]@{
             Path = $_.FullName
             Name = $_.Name
             Accessed = $_.LastAccessTime
         }
-    }
-    return $opened | Sort-Object Accessed -Descending
+    } | Sort-Object Accessed -Descending
 }
 
 function Get-DeletedEntries {
@@ -110,19 +104,17 @@ function Get-DeletedEntries {
         Write-Warning "Deleted log file not found: $LogPath"
         return @()
     }
-    $deletions = @()
     Get-Content $LogPath | ForEach-Object {
         if ($_ -match '(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}).*(delete|deleted|löschen)') {
             $ts = [DateTime]::Parse($matches[1])
             if ($ts -ge $Threshold) {
-                $deletions += [PSCustomObject]@{
+                [PSCustomObject]@{
                     Timestamp = $ts
                     Line = $_
                 }
             }
         }
-    }
-    return $deletions | Sort-Object Timestamp -Descending
+    } | Sort-Object Timestamp -Descending
 }
 
 function Get-ServerLogEntries {
@@ -131,20 +123,20 @@ function Get-ServerLogEntries {
         Write-Warning "Server log file not found: $LogPath"
         return @()
     }
-    $entries = @()
     Get-Content $LogPath | ForEach-Object {
         if ($_ -match '(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})') {
             $ts = [DateTime]::Parse($matches[1])
             if ($ts -ge $Threshold -and (-not $PlayerName -or $_.ToLower().Contains($PlayerName.ToLower()))) {
-                $entries += [PSCustomObject]@{
+                [PSCustomObject]@{
                     Timestamp = $ts
                     Line = $_
                 }
             }
         }
-    }
-    return $entries | Sort-Object Timestamp -Descending
+    } | Sort-Object Timestamp -Descending
 }
+
+# ===================== Main =====================
 
 if (-not $Quiet) {
     Show-Header
@@ -161,6 +153,7 @@ $texturePacks = Get-TexturePacks -RootPath $Path
 $mods = Get-ModFiles -RootPath $Path
 $recent = Get-RecentlyOpenedFiles -RootPath $Path -Threshold (Get-Date).AddHours(-2)
 
+# -------- Texture Packs --------
 Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
 Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 $texturePacks | Select-Object -First 20 | ForEach-Object {
@@ -172,6 +165,7 @@ if ($texturePacks.Count -gt 20) {
 }
 Write-Host ""
 
+# -------- Mods --------
 Write-Host "MODS" -ForegroundColor Cyan
 Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 $mods | Select-Object -First 50 | ForEach-Object {
@@ -184,6 +178,7 @@ if ($mods.Count -gt 50) {
 }
 Write-Host ""
 
+# -------- Recently Opened --------
 Write-Host "ZU LETZT GEÖFFNETE DATEIEN (letzte 2 Stunden)" -ForegroundColor Yellow
 Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 $recent | Select-Object -First 20 | ForEach-Object {
@@ -195,6 +190,7 @@ if ($recent.Count -gt 20) {
 }
 Write-Host ""
 
+# -------- Deleted Logs --------
 if ($DeletedLog) {
     $deletions = Get-DeletedEntries -LogPath $DeletedLog -Threshold $TimeThreshold
     Write-Host "Deletion entries in the last $Hours hours: $($deletions.Count)"
@@ -207,6 +203,7 @@ if ($DeletedLog) {
     Write-Host ""
 }
 
+# -------- Server Logs --------
 if ($ServerLog) {
     $entries = Get-ServerLogEntries -LogPath $ServerLog -PlayerName $Player -Threshold $TimeThreshold
     $filterText = if ($Player) { " for player `"$Player`"" } else { "" }
