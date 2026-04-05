@@ -29,11 +29,10 @@ function Is-IllegalMod {
 
 function Show-Header {
     Clear-Host
-    Write-Host '==============================================' -ForegroundColor DarkGray
-    Write-Host 'Made by David' -ForegroundColor Magenta
+    Write-Host '==============================================' -ForegroundColor Red
+    Write-Host 'Made by David' -ForegroundColor green
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
-    Write-Host 'Minecraft Mod Scanner' -ForegroundColor Green
-    Write-Host '==============================================' -ForegroundColor DarkGray
+    Write-Host '==============================================' -ForegroundColor Red
 }
 
 function Show-LoadingText {
@@ -45,7 +44,7 @@ function Show-LoadingText {
     Write-Host ''
     Start-Sleep -Milliseconds 400
     Write-Host 'Done loading.' -ForegroundColor Green
-    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
+    Write-Host '----------------------------------------------' -ForegroundColor DarkRed
 }
 
 function Get-ModFiles {
