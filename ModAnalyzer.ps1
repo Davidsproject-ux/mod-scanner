@@ -1,14 +1,35 @@
 # Made by David
 # Cloudsmp.net Cheat finder
-# Minecraft Mod Scanner
+# Minecraft Mod Scanner (Launcher-only)
+# Passwort: cloudsmp
 
+# ================= Password ==================
+$Password = Read-Host -AsSecureString "Bitte Passwort eingeben"
+$Bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
+$UnsecurePassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($Bstr)
+
+if ($UnsecurePassword -ne "cloudsmp") {
+    Write-Host "Falsches Passwort! Script wird beendet." -ForegroundColor Red
+    exit
+}
+
+# ================= Parameters =================
 param(
-    [string]$Path = $(Get-Location).Path,
     [double]$Hours = 3.0,
     [string]$ServerLog,
     [string]$Player,
     [string]$DeletedLog,
     [switch]$Quiet
+)
+
+# Launcher Mod-Ordner
+$LauncherPaths = @(
+    "$env:APPDATA\.minecraft\mods",
+    "$env:APPDATA\.minecraft\resourcepacks",
+    "$env:APPDATA\.minecraft\config",
+    "$env:USERPROFILE\.lunarclient\offline\multiver",
+    "$env:USERPROFILE\.lunarclient\profiles",
+    "$env:USERPROFILE\MultiMC\instances"
 )
 
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
@@ -19,8 +40,8 @@ $IllegalModNames = @(
 )
 $TimeThreshold = (Get-Date).AddHours(-$Hours)
 
-function Is-IllegalMod {
-    param([string]$Name)
+# ================= Functions =================
+function Is-IllegalMod { param([string]$Name)
     $lower = $Name.ToLower()
     foreach ($keyword in $IllegalModNames) {
         if ($lower -like "*${keyword}*") { return $true }
@@ -33,7 +54,7 @@ function Show-Header {
     Write-Host '==============================================' -ForegroundColor DarkGray
     Write-Host 'Made by David' -ForegroundColor Magenta
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
-    Write-Host 'Minecraft Mod Scanner' -ForegroundColor Green
+    Write-Host 'Minecraft Mod Scanner (Launcher-only)' -ForegroundColor Green
     Write-Host '==============================================' -ForegroundColor DarkGray
 }
 
@@ -41,93 +62,67 @@ function Show-LoadingText {
     $text = 'Loading mods...'
     foreach ($ch in $text.ToCharArray()) {
         Write-Host -NoNewline $ch -ForegroundColor Yellow
-        Start-Sleep -Milliseconds 80
+        Start-Sleep -Milliseconds 50
     }
     Write-Host ''
-    Start-Sleep -Milliseconds 400
+    Start-Sleep -Milliseconds 300
     Write-Host 'Done loading.' -ForegroundColor Green
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
 
 function Get-ModFiles {
-    param([string]$RootPath)
-    Get-ChildItem -Path $RootPath -Recurse -File |
-    Where-Object { $_.Extension -in $ModExtensions } |
-    ForEach-Object {
-        [PSCustomObject]@{
-            Path     = $_.FullName
-            Name     = $_.Name
-            Modified = $_.LastWriteTime
-        }
-    } | Sort-Object Modified -Descending
+    param([string[]]$RootPaths)
+    $allMods = @()
+    foreach ($RootPath in $RootPaths) {
+        if (-not (Test-Path $RootPath)) { continue }
+        $mods = Get-ChildItem -Path $RootPath -Recurse -File |
+        Where-Object { $_.Extension -in $ModExtensions } |
+        ForEach-Object { [PSCustomObject]@{ Path=$_.FullName; Name=$_.Name; Modified=$_.LastWriteTime } }
+        $allMods += $mods
+    }
+    return $allMods | Sort-Object Modified -Descending
 }
 
 function Get-TexturePacks {
-    param([string]$RootPath)
-    Get-ChildItem -Path $RootPath -Recurse -File |
-    Where-Object {
-        ($_.Extension -in @('.zip', '.rar')) -and
-        ($_.Name -match '(?i)(resource|texture|pack)')
-    } |
-    ForEach-Object {
-        [PSCustomObject]@{
-            Path     = $_.FullName
-            Name     = $_.Name
-            Modified = $_.LastWriteTime
-        }
-    } | Sort-Object Modified -Descending
+    param([string[]]$RootPaths)
+    $allPacks = @()
+    foreach ($RootPath in $RootPaths) {
+        if (-not (Test-Path $RootPath)) { continue }
+        $packs = Get-ChildItem -Path $RootPath -Recurse -File |
+        Where-Object { ($_.Extension -in @('.zip', '.rar')) -and ($_.Name -match '(?i)(resource|texture|pack)') } |
+        ForEach-Object { [PSCustomObject]@{ Path=$_.FullName; Name=$_.Name; Modified=$_.LastWriteTime } }
+        $allPacks += $packs
+    }
+    return $allPacks | Sort-Object Modified -Descending
 }
 
-function Get-DeletedEntries {
-    param([string]$LogPath, [DateTime]$Threshold)
-    if (-not (Test-Path $LogPath)) {
-        Write-Warning "Deleted log file not found: $LogPath"
-        return @()
-    }
+function Get-DeletedEntries { param([string]$LogPath, [DateTime]$Threshold)
+    if (-not (Test-Path $LogPath)) { return @() }
     Get-Content $LogPath | ForEach-Object {
         if ($_ -match '(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}).*(delete|deleted|löschen)') {
             $ts = [DateTime]::Parse($matches[1])
-            if ($ts -ge $Threshold) {
-                [PSCustomObject]@{
-                    Timestamp = $ts
-                    Line      = $_
-                }
-            }
+            if ($ts -ge $Threshold) { [PSCustomObject]@{ Timestamp=$ts; Line=$_ } }
         }
     } | Sort-Object Timestamp -Descending
 }
 
-function Get-ServerLogEntries {
-    param([string]$LogPath, [string]$PlayerName, [DateTime]$Threshold)
-    if (-not (Test-Path $LogPath)) {
-        Write-Warning "Server log file not found: $LogPath"
-        return @()
-    }
+function Get-ServerLogEntries { param([string]$LogPath, [string]$PlayerName, [DateTime]$Threshold)
+    if (-not (Test-Path $LogPath)) { return @() }
     Get-Content $LogPath | ForEach-Object {
         if ($_ -match '(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})') {
             $ts = [DateTime]::Parse($matches[1])
             if ($ts -ge $Threshold -and (-not $PlayerName -or $_.ToLower().Contains($PlayerName.ToLower()))) {
-                [PSCustomObject]@{
-                    Timestamp = $ts
-                    Line      = $_
-                }
+                [PSCustomObject]@{ Timestamp=$ts; Line=$_ }
             }
         }
     } | Sort-Object Timestamp -Descending
 }
 
-# ===================== Main =====================
+# ================= Main =================
+if (-not $Quiet) { Show-Header; Show-LoadingText }
 
-if (-not $Quiet) {
-    Show-Header
-    Write-Host "Path: $Path" -ForegroundColor White
-    Write-Host "Hours: $Hours" -ForegroundColor White
-    Write-Host ""
-    Show-LoadingText
-}
-
-$texturePacks = Get-TexturePacks -RootPath $Path
-$mods         = Get-ModFiles -RootPath $Path
+$mods         = Get-ModFiles -RootPaths $LauncherPaths
+$texturePacks = Get-TexturePacks -RootPaths $LauncherPaths
 
 # -------- Texture Packs --------
 Write-Host "TEXTUREPACKS" -ForegroundColor Magenta
