@@ -25,7 +25,7 @@ $SleepModDisplay = 0
 $LauncherPaths = @{
     "Vanilla"        = "$env:APPDATA\.minecraft\mods"
     "Lunar Client"   = "$env:USERPROFILE\.lunarclient\offline\multiver"
-    "Feather Client" = "$env:USERPROFILE\.feather\instances"
+    "Feather Client" = "$env:USERPROFILE\.feather\user-mods"
     "Prism Client"   = "$env:APPDATA\PrismLauncher\instances"
     "MultiMC"        = "$env:USERPROFILE\MultiMC\instances"
     "Modrinth"       = "$env:APPDATA\ModrinthApp\profiles"
@@ -119,7 +119,7 @@ function Select-Instance {
 
 # --- Feather Mods Path ---
 function Get-FeatherModsPath {
-    $featherRoot = "$env:USERPROFILE\.feather\instances"
+    $featherRoot = "$env:USERPROFILE\.feather\user-mods"
     if (-not (Test-Path $featherRoot)) { return $null }
 
     $versions = Get-ChildItem -Path $featherRoot -Directory | Select-Object -ExpandProperty Name
@@ -151,7 +151,8 @@ function Get-FeatherModsPath {
         }
     }
 
-    $modsPath = Join-Path $featherRoot "$chosenVersion\user-mods"
+    # Pfad zum Mod-Ordner der gewählten Version
+    $modsPath = Join-Path $featherRoot $chosenVersion
     return $modsPath
 }
 
