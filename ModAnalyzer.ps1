@@ -50,11 +50,10 @@ function Is-IllegalMod { param([string]$Name)
 
 function Show-Header {
     Clear-Host
-    Write-Host '==============================================' -ForegroundColor DarkGray
-    Write-Host 'Made by David' -ForegroundColor Magenta
-    Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Cyan
-    Write-Host 'Minecraft Mod Scanner (Launcher-only)' -ForegroundColor Green
-    Write-Host '==============================================' -ForegroundColor DarkGray
+    Write-Host '==============================================' -ForegroundColor DarkRed
+    Write-Host 'Made by David' -ForegroundColor Red
+    Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Red
+    Write-Host '==============================================' -ForegroundColor DarkRed
 }
 
 function Show-LoadingText {
