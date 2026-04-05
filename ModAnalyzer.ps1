@@ -49,10 +49,10 @@ function Show-LoadingText {
     $text = 'Scanning launchers...'
     foreach ($ch in $text.ToCharArray()) {
         Write-Host -NoNewline $ch -ForegroundColor Yellow
-        Start-Sleep -Milliseconds 50
+        Start-Sleep -Milliseconds 10
     }
     Write-Host ''
-    Start-Sleep -Milliseconds 300
+    Start-Sleep -Milliseconds 100
     Write-Host 'Done scanning.' -ForegroundColor DarkRed
     Write-Host '----------------------------------------------' -ForegroundColor DarkGray
 }
