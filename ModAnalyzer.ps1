@@ -207,55 +207,6 @@ if ($mods.Count -gt 50) {
 }
 Write-Host ""
 
-Write-Host "ZU LETZT GEÖFFNETE DATEIEN (letzte 2 Stunden)" -ForegroundColor Yellow
-Write-Host '----------------------------------------------' -ForegroundColor DarkGray
-$recent | Select-Object -First 20 | ForEach-Object {
-    Write-Host "  $($_.Name)" -ForegroundColor Yellow
-    Write-Host "    $($_.Path)" -ForegroundColor DarkGray
-}
-if ($recent.Count -gt 20) {
-    Write-Host "  ...and $($recent.Count - 20) more files" -ForegroundColor Yellow
-}
-Write-Host ""
-
-$usbDrives = Get-UsbDrives
-if ($usbDrives.Count -gt 0) {
-    Write-Host "USB-DRIVES" -ForegroundColor White
-    Write-Host '----------------------------------------------' -ForegroundColor DarkGray
-    foreach ($drive in $usbDrives) {
-        Write-Host "Drive: $($drive.Drive) ($($drive.Label))" -ForegroundColor Cyan
-        Write-Host "Files found: $($drive.FileCount)" -ForegroundColor Cyan
-        foreach ($file in $drive.Files) {
-            Write-Host "  $($file.Name)" -ForegroundColor White
-            Write-Host "    $($file.FullName)" -ForegroundColor DarkGray
-        }
-        Write-Host ""
-    }
-}
-
-if ($DeletedLog) {
-    $deletions = Get-DeletedEntries -LogPath $DeletedLog -Threshold $TimeThreshold
-    Write-Host "Deletion entries in the last $Hours hours: $($deletions.Count)"
-    $deletions | Select-Object -First 20 | ForEach-Object {
-        Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
-    }
-    if ($deletions.Count -gt 20) {
-        Write-Host "  ...and $($deletions.Count - 20) more entries"
-    }
-    Write-Host ""
-}
-
-if ($ServerLog) {
-    $entries = Get-ServerLogEntries -LogPath $ServerLog -PlayerName $Player -Threshold $TimeThreshold
-    $filterText = if ($Player) { " for player `"$Player`"" } else { "" }
-    Write-Host "Server log entries$filterText in the last $Hours hours: $($entries.Count)"
-    $entries | Select-Object -First 20 | ForEach-Object {
-        Write-Host ("  {0,-19}  {1}" -f $_.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), $_.Line)
-    }
-    if ($entries.Count -gt 20) {
-        Write-Host "  ...and $($entries.Count - 20) more lines"
-    }
-    Write-Host ""
 }
 
 if (-not $Quiet) {
