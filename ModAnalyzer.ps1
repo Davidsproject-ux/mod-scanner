@@ -10,8 +10,7 @@ function Show-Header {
     Write-Host '==============================================' -ForegroundColor DarkRed
     Write-Host 'Made by David' -ForegroundColor Red
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Red
-    Write-Host 'Minecraft Mod Scanner (Launcher Edition)' -ForegroundColor Blue
-    Write-Host 'Bist du ein Cheater? 😒' -ForegroundColor Cyan
+    Write-Host 'Bist du ein Cheater? 😒' -ForegroundColor aqua
     Write-Host '==============================================' -ForegroundColor DarkRed
 }
 
