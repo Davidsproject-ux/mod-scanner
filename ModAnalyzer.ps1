@@ -10,7 +10,7 @@ function Show-Header {
     Write-Host '==============================================' -ForegroundColor DarkRed
     Write-Host 'Made by David' -ForegroundColor Red
     Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Red
-    Write-Host 'Are you a cheater? 😒' -ForegroundColor Blue
+    Write-Host 'Are you a cheater?😒' -ForegroundColor Blue
     Write-Host '==============================================' -ForegroundColor DarkRed
 }
 
