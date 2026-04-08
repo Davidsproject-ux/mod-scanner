@@ -1,6 +1,5 @@
 # ===============================================
 # Made by David
-# Cloudsmp.net Cheat finder
 # Minecraft Mod Scanner (Launcher Edition)
 # ===============================================
 
@@ -9,7 +8,7 @@ function Show-Header {
     Clear-Host
     Write-Host '==============================================' -ForegroundColor DarkRed
     Write-Host 'Made by David' -ForegroundColor Red
-    Write-Host 'Cloudsmp.net Cheat finder' -ForegroundColor Red
+    Write-Host 'Cheat finder' -ForegroundColor Red
     Write-Host 'Are you a cheater?😒' -ForegroundColor DarkRed
     Write-Host '==============================================' -ForegroundColor DarkRed
 }
