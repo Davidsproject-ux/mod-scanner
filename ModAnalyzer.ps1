@@ -15,7 +15,7 @@ Show-Header
 
 # --- Passwort ---
 $PasswordInput = Read-Host "Enter password"
-if ($PasswordInput -ne "pornhub") {
+if ($PasswordInput -ne "fisch") {
     Write-Host "Incorrect password!" -ForegroundColor Red
     exit
 }
