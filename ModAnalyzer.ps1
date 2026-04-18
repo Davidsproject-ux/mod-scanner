@@ -1,14 +1,11 @@
 # ===============================================
-# Made by David
-# Minecraft Mod Scanner (Launcher Edition)
+# Minecraft Mod Scanner (Clean Version)
 # ===============================================
 
 function Show-Header {
     Clear-Host
     Write-Host '==============================================' -ForegroundColor DarkRed
-    Write-Host 'Made by David' -ForegroundColor Red
-    Write-Host 'Cheat finder' -ForegroundColor Red
-    Write-Host 'Are you a cheater?😒' -ForegroundColor DarkRed
+    Write-Host 'Minecraft Mod Scanner' -ForegroundColor Red
     Write-Host '==============================================' -ForegroundColor DarkRed
 }
 
@@ -68,16 +65,16 @@ function Select-Instance {
 
     if (-not (Test-Path $RootPath)) { return $null }
 
-    $list = @(Get-ChildItem $RootPath -Directory | Select-Object -ExpandProperty Name)
+    $list = @(Get-ChildItem $RootPath -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
     if ($list.Count -eq 0) { return $null }
 
     if ($list.Count -eq 1) {
         $chosen = $list[0]
     }
     else {
-        Write-Host "`n$Name versions:" -ForegroundColor Cyan
+        Write-Host "`n${Name} versions:" -ForegroundColor Cyan
 
-        for ($i=0; $i -lt $list.Count; $i++) {
+        for ($i = 0; $i -lt $list.Count; $i++) {
             Write-Host "[$($i+1)] $($list[$i])"
         }
 
@@ -85,14 +82,10 @@ function Select-Instance {
 
         if ($input -match '^\d+$') {
             $idx = [int]$input - 1
-            if ($idx -ge 0 -and $idx -lt $list.Count) {
-                $chosen = $list[$idx]
-            } else {
-                $chosen = $list[0]
-            }
+            $chosen = if ($idx -ge 0 -and $idx -lt $list.Count) { $list[$idx] } else { $list[0] }
         }
         else {
-            $chosen = $list | Where-Object { $_ -like "$input*" } | Select-Object -First 1
+            $chosen = ($list | Where-Object { $_ -like "$input*" } | Select-Object -First 1)
             if (-not $chosen) { $chosen = $list[0] }
         }
     }
@@ -104,7 +97,7 @@ function Get-FeatherModsPath {
     $root = "$env:USERPROFILE\.feather\user-mods"
     if (-not (Test-Path $root)) { return $null }
 
-    $versions = @(Get-ChildItem $root -Directory | Select-Object -ExpandProperty Name)
+    $versions = @(Get-ChildItem $root -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
     if ($versions.Count -eq 0) { return $null }
 
     if ($versions.Count -eq 1) {
@@ -113,7 +106,7 @@ function Get-FeatherModsPath {
     else {
         Write-Host "`nFeather versions:" -ForegroundColor Cyan
 
-        for ($i=0; $i -lt $versions.Count; $i++) {
+        for ($i = 0; $i -lt $versions.Count; $i++) {
             Write-Host "[$($i+1)] $($versions[$i])"
         }
 
@@ -121,14 +114,10 @@ function Get-FeatherModsPath {
 
         if ($input -match '^\d+$') {
             $idx = [int]$input - 1
-            if ($idx -ge 0 -and $idx -lt $versions.Count) {
-                $chosen = $versions[$idx]
-            } else {
-                $chosen = $versions[0]
-            }
+            $chosen = if ($idx -ge 0 -and $idx -lt $versions.Count) { $versions[$idx] } else { $versions[0] }
         }
         else {
-            $chosen = $versions | Where-Object { $_ -like "$input*" } | Select-Object -First 1
+            $chosen = ($versions | Where-Object { $_ -like "$input*" } | Select-Object -First 1)
             if (-not $chosen) { $chosen = $versions[0] }
         }
     }
@@ -136,7 +125,7 @@ function Get-FeatherModsPath {
     return Join-Path $root $chosen
 }
 
-# --- Start Scan ---
+# --- Start ---
 Write-Host "`nScanning launchers..." -ForegroundColor Yellow
 
 foreach ($launcher in $LauncherPaths.Keys) {
@@ -154,7 +143,7 @@ foreach ($launcher in $LauncherPaths.Keys) {
         "Feather Client" { $path = Get-FeatherModsPath }
     }
 
-    Write-Host "`n$launcher:" -ForegroundColor Cyan
+    Write-Host "`n${launcher}:" -ForegroundColor Cyan
 
     if (-not $path -or -not (Test-Path $path)) {
         Write-Host "No mods found" -ForegroundColor Yellow
@@ -175,7 +164,5 @@ foreach ($launcher in $LauncherPaths.Keys) {
 
     Write-Host "$($mods.Count) mods found" -ForegroundColor DarkGray
 }
-
-Write-Host "`nScan complete." -ForegroundColor Green
 
 Write-Host "`nScan complete." -ForegroundColor Green
