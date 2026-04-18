@@ -1,7 +1,9 @@
 # ===============================================
-# Minecraft Mod Scanner (Clean Version)
+# Made by David
+# Minecraft Mod Scanner (Launcher Edition) - FIXED
 # ===============================================
 
+# --- Header ---
 function Show-Header {
     Clear-Host
     Write-Host '==============================================' -ForegroundColor DarkRed
@@ -18,7 +20,10 @@ if ($PasswordInput -ne "cloudsmp") {
     exit
 }
 
-# --- Config ---
+# ===============================================
+# CONFIG (FIXED)
+# ===============================================
+
 $ModExtensions = @('.jar', '.litemod', '.mcpack', '.mcaddon', '.modpack')
 
 $IllegalModNames = @(
@@ -28,25 +33,30 @@ $IllegalModNames = @(
 )
 
 $LauncherPaths = @{
-    "Vanilla"        = "$env:APPDATA\.minecraft\mods"
-    "Lunar Client"   = "$env:USERPROFILE\.lunarclient\offline\multiver"
-    "Feather Client" = "$env:USERPROFILE\.feather\user-mods"
-    "Prism Client"   = "$env:APPDATA\PrismLauncher\instances"
-    "MultiMC"        = "$env:USERPROFILE\MultiMC\instances"
-    "Modrinth"       = "$env:APPDATA\ModrinthApp\profiles"
-    "CurseForge"     = "$env:USERPROFILE\curseforge\minecraft\Instances"
+    "Vanilla"        = Join-Path $env:APPDATA ".minecraft\mods"
+    "Lunar Client"   = Join-Path $env:USERPROFILE ".lunarclient\offline\multiver"
+    "Feather Client" = Join-Path $env:USERPROFILE ".feather\user-mods"
+    "Prism Client"   = Join-Path $env:APPDATA "PrismLauncher\instances"
+    "MultiMC"        = Join-Path $env:USERPROFILE "MultiMC\instances"
+    "Modrinth"       = Join-Path $env:APPDATA "ModrinthApp\profiles"
+    "CurseForge"     = Join-Path $env:USERPROFILE "curseforge\minecraft\Instances"
 }
 
-# --- Functions ---
+# ===============================================
+# FUNCTIONS
+# ===============================================
+
 function Is-IllegalMod {
     param([string]$Name)
 
     $lower = $Name.ToLowerInvariant()
+
     foreach ($keyword in $IllegalModNames) {
         if ($lower -like "*$keyword*") {
             return $true
         }
     }
+
     return $false
 }
 
@@ -66,13 +76,14 @@ function Select-Instance {
     if (-not (Test-Path $RootPath)) { return $null }
 
     $list = @(Get-ChildItem $RootPath -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+
     if ($list.Count -eq 0) { return $null }
 
     if ($list.Count -eq 1) {
         $chosen = $list[0]
     }
     else {
-        Write-Host "`n${Name} versions:" -ForegroundColor Cyan
+        Write-Host "`n$Name versions:" -ForegroundColor Cyan
 
         for ($i = 0; $i -lt $list.Count; $i++) {
             Write-Host "[$($i+1)] $($list[$i])"
@@ -85,7 +96,7 @@ function Select-Instance {
             $chosen = if ($idx -ge 0 -and $idx -lt $list.Count) { $list[$idx] } else { $list[0] }
         }
         else {
-            $chosen = ($list | Where-Object { $_ -like "$input*" } | Select-Object -First 1)
+            $chosen = $list | Where-Object { $_ -like "$input*" } | Select-Object -First 1
             if (-not $chosen) { $chosen = $list[0] }
         }
     }
@@ -95,9 +106,11 @@ function Select-Instance {
 
 function Get-FeatherModsPath {
     $root = "$env:USERPROFILE\.feather\user-mods"
+
     if (-not (Test-Path $root)) { return $null }
 
     $versions = @(Get-ChildItem $root -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+
     if ($versions.Count -eq 0) { return $null }
 
     if ($versions.Count -eq 1) {
@@ -117,7 +130,7 @@ function Get-FeatherModsPath {
             $chosen = if ($idx -ge 0 -and $idx -lt $versions.Count) { $versions[$idx] } else { $versions[0] }
         }
         else {
-            $chosen = ($versions | Where-Object { $_ -like "$input*" } | Select-Object -First 1)
+            $chosen = $versions | Where-Object { $_ -like "$input*" } | Select-Object -First 1
             if (-not $chosen) { $chosen = $versions[0] }
         }
     }
@@ -125,7 +138,10 @@ function Get-FeatherModsPath {
     return Join-Path $root $chosen
 }
 
-# --- Start ---
+# ===============================================
+# START SCAN
+# ===============================================
+
 Write-Host "`nScanning launchers..." -ForegroundColor Yellow
 
 foreach ($launcher in $LauncherPaths.Keys) {
@@ -143,7 +159,8 @@ foreach ($launcher in $LauncherPaths.Keys) {
         "Feather Client" { $path = Get-FeatherModsPath }
     }
 
-    Write-Host "`n${launcher}:" -ForegroundColor Cyan
+    # 🔥 FIXED LINE (NO MORE $launcher: CRASH)
+    Write-Host ("`n{0}:" -f $launcher) -ForegroundColor Cyan
 
     if (-not $path -or -not (Test-Path $path)) {
         Write-Host "No mods found" -ForegroundColor Yellow
